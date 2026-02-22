@@ -32,7 +32,7 @@ This guide covers installing OpenJarvis, its optional extras, and setting up an 
 === "From source"
 
     ```bash
-    git clone https://github.com/jonsaadfalcon/OpenJarvis.git
+    git clone https://github.com/HazyResearch/OpenJarvis.git
     cd OpenJarvis
     uv sync
     ```

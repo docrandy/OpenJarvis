@@ -1,9 +1,9 @@
 site_name: OpenJarvis
-site_url: https://jonsaadfalcon.github.io/OpenJarvis/
+site_url: https://hazyresearch.github.io/OpenJarvis/
 site_description: Programming abstractions for on-device AI
 site_author: OpenJarvis Contributors
-repo_url: https://github.com/jonsaadfalcon/OpenJarvis
-repo_name: jonsaadfalcon/OpenJarvis
+repo_url: https://github.com/HazyResearch/OpenJarvis
+repo_name: HazyResearch/OpenJarvis
 edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2026 OpenJarvis Contributors
@@ -114,7 +114,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/jonsaadfalcon/OpenJarvis
+      link: https://github.com/HazyResearch/OpenJarvis
 
 nav:
   - Home: index.md
