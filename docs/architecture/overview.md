@@ -115,6 +115,7 @@ Each registry provides:
 | `ToolRegistry` | `Any` (BaseTool classes) | Tool implementations |
 | `RouterPolicyRegistry` | `Any` (RouterPolicy classes) | Router policies |
 | `BenchmarkRegistry` | `Any` (BaseBenchmark classes) | Benchmark implementations |
+| `ChannelRegistry` | `Any` (BaseChannel classes) | Channel implementations |
 
 !!! info "Adding a new component"
     To add a new backend, implement the appropriate ABC and decorate it with
@@ -205,6 +206,18 @@ src/openjarvis/
         latency.py          LatencyBenchmark (per-call latency)
         throughput.py       ThroughputBenchmark (tokens/second)
 
+    security/           Security guardrails
+        _stubs.py           BaseScanner ABC
+        types.py            ThreatLevel, RedactionMode, ScanFinding, ScanResult
+        scanner.py          SecretScanner, PIIScanner
+        guardrails.py       GuardrailsEngine (wraps InferenceEngine)
+        file_policy.py      is_sensitive_file(), DEFAULT_SENSITIVE_PATTERNS
+        audit.py            AuditLogger (SQLite security events)
+
+    channels/           Channel messaging
+        _stubs.py           BaseChannel ABC, ChannelMessage, ChannelStatus
+        openclaw_bridge.py  OpenClawChannelBridge (WS/HTTP bridge)
+
     cli/                CLI commands (Click-based)
         ask.py              jarvis ask -- query the assistant
         serve.py            jarvis serve -- start API server
@@ -258,6 +271,8 @@ graph LR
 | `AGENT_TURN_START` / `AGENT_TURN_END` | Agents | Track agent lifecycle |
 | `TELEMETRY_RECORD` | TelemetryStore | Publish telemetry records |
 | `TRACE_STEP` / `TRACE_COMPLETE` | TraceCollector | Trace lifecycle events |
+| `CHANNEL_MESSAGE_RECEIVED` / `CHANNEL_MESSAGE_SENT` | OpenClawChannelBridge | Track channel messaging |
+| `SECURITY_SCAN` / `SECURITY_ALERT` / `SECURITY_BLOCK` | GuardrailsEngine | Track security scanning |
 
 ### Dependency Flow
 

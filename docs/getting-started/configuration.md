@@ -44,7 +44,7 @@ jarvis init --force
 
 ## Configuration Sections
 
-The config file is organized into seven TOML sections. Every field has a default value, so you only need to specify the values you want to change.
+The config file is organized into nine TOML sections. Every field has a default value, so you only need to specify the values you want to change.
 
 ---
 
@@ -237,6 +237,62 @@ db_path = "~/.openjarvis/telemetry.db"
 
 !!! info "Telemetry is local-only"
     All telemetry data is stored locally in a SQLite database. No data is ever sent to external services.
+
+---
+
+### `[channel]` -- Channel Messaging
+
+Controls the channel messaging bridge for multi-platform communication.
+
+```toml
+[channel]
+enabled = false
+gateway_url = "ws://127.0.0.1:18789/ws"
+default_agent = "simple"
+reconnect_interval = 5.0
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `false` | Whether to enable channel messaging support. |
+| `gateway_url` | string | `ws://127.0.0.1:18789/ws` | WebSocket URL of the OpenClaw gateway. |
+| `default_agent` | string | `"simple"` | Default agent for handling channel messages. |
+| `reconnect_interval` | float | `5.0` | Seconds to wait before reconnecting after a disconnect. |
+
+!!! note "Requires OpenClaw gateway"
+    Channel messaging requires a running OpenClaw gateway. The bridge connects via WebSocket with HTTP fallback.
+
+---
+
+### `[security]` -- Security Guardrails
+
+Controls the security scanning pipeline for input/output content.
+
+```toml
+[security]
+enabled = true
+mode = "warn"
+scan_input = true
+scan_output = true
+secret_scanner = true
+pii_scanner = true
+enforce_tool_confirmation = true
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Whether to enable security guardrails. |
+| `mode` | string | `"warn"` | Action on findings: `"warn"` (log only), `"redact"` (replace sensitive content), or `"block"` (raise error). |
+| `scan_input` | bool | `true` | Whether to scan user input messages. |
+| `scan_output` | bool | `true` | Whether to scan model output. |
+| `secret_scanner` | bool | `true` | Enable secret detection (API keys, tokens, passwords). |
+| `pii_scanner` | bool | `true` | Enable PII detection (emails, SSNs, credit cards). |
+| `enforce_tool_confirmation` | bool | `true` | Require confirmation before executing tools. |
+
+!!! tip "Choosing a security mode"
+    Use `"warn"` during development to see what would be flagged without disrupting output.
+    Use `"redact"` in production to automatically sanitize sensitive content.
+    Use `"block"` for strict environments where any sensitive data should halt generation.
 
 ---
 

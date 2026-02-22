@@ -62,3 +62,34 @@ class TestFileReadTool:
         result = tool.execute(path=str(tmp_path))
         assert result.success is False
         assert "Not a file" in result.content
+
+    def test_blocks_env_file(self, tmp_path):
+        f = tmp_path / ".env"
+        f.write_text("SECRET=foo", encoding="utf-8")
+        tool = FileReadTool()
+        result = tool.execute(path=str(f))
+        assert result.success is False
+        assert "sensitive" in result.content.lower()
+
+    def test_blocks_pem_file(self, tmp_path):
+        f = tmp_path / "server.pem"
+        f.write_text("-----BEGIN CERTIFICATE-----", encoding="utf-8")
+        tool = FileReadTool()
+        result = tool.execute(path=str(f))
+        assert result.success is False
+        assert "sensitive" in result.content.lower()
+
+    def test_blocks_credentials_json(self, tmp_path):
+        f = tmp_path / "credentials.json"
+        f.write_text('{"token": "abc"}', encoding="utf-8")
+        tool = FileReadTool()
+        result = tool.execute(path=str(f))
+        assert result.success is False
+        assert "sensitive" in result.content.lower()
+
+    def test_allows_normal_py_files(self, tmp_path):
+        f = tmp_path / "main.py"
+        f.write_text("print('hello')", encoding="utf-8")
+        tool = FileReadTool()
+        result = tool.execute(path=str(f))
+        assert result.success is True

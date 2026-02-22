@@ -130,6 +130,8 @@ nav:
       - Tools: user-guide/tools.md
       - Telemetry & Traces: user-guide/telemetry.md
       - Benchmarks: user-guide/benchmarks.md
+      - Security: user-guide/security.md
+      - Channels: user-guide/channels.md
   - Architecture:
       - Overview: architecture/overview.md
       - Intelligence: architecture/intelligence.md
@@ -139,6 +141,8 @@ nav:
       - Learning & Traces: architecture/learning.md
       - Query Flow: architecture/query-flow.md
       - Design Principles: architecture/design-principles.md
+      - Security: architecture/security.md
+      - Channels: architecture/channels.md
   - API Reference:
       - api/index.md
       - SDK (Jarvis): api/sdk.md
@@ -153,6 +157,8 @@ nav:
       - Telemetry: api/telemetry.md
       - Benchmarks: api/bench.md
       - Server: api/server.md
+      - Security: api/security.md
+      - Channels: api/channels.md
   - Deployment:
       - Docker: deployment/docker.md
       - systemd (Linux): deployment/systemd.md

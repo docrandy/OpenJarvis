@@ -136,3 +136,42 @@ def test_ingest_empty_dir(tmp_path: Path):
     empty.mkdir()
     chunks = ingest_path(empty)
     assert chunks == []
+
+
+def test_ingest_skips_env_files(tmp_path: Path):
+    (tmp_path / ".env").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    (tmp_path / "readme.txt").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    chunks = ingest_path(tmp_path)
+    sources = {c.source for c in chunks}
+    assert not any(".env" in s for s in sources)
+    assert any("readme.txt" in s for s in sources)
+
+
+def test_ingest_skips_key_files(tmp_path: Path):
+    (tmp_path / "server.key").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    (tmp_path / "notes.txt").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    chunks = ingest_path(tmp_path)
+    sources = {c.source for c in chunks}
+    assert not any("server.key" in s for s in sources)
+    assert any("notes.txt" in s for s in sources)
+
+
+def test_ingest_processes_normal_files(tmp_path: Path):
+    (tmp_path / "app.py").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    (tmp_path / "doc.md").write_text(
+        " ".join(f"x{i}" for i in range(100)), encoding="utf-8"
+    )
+    chunks = ingest_path(tmp_path)
+    sources = {c.source for c in chunks}
+    assert any("app.py" in s for s in sources)
+    assert any("doc.md" in s for s in sources)

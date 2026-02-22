@@ -115,3 +115,25 @@ request/response validation matching the OpenAI API format.
     options:
       show_source: true
       members_order: source
+
+---
+
+## Channel Endpoints
+
+### list_channels
+
+::: openjarvis.server.routes.list_channels
+    options:
+      show_source: true
+
+### channel_send
+
+::: openjarvis.server.routes.channel_send
+    options:
+      show_source: true
+
+### channel_status
+
+::: openjarvis.server.routes.channel_status
+    options:
+      show_source: true

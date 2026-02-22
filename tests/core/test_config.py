@@ -5,10 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from openjarvis.core.config import (
+    ChannelConfig,
     EngineConfig,
     GpuInfo,
     HardwareInfo,
     JarvisConfig,
+    SecurityConfig,
     generate_default_toml,
     load_config,
     recommend_engine,
@@ -92,3 +94,56 @@ class TestGenerateToml:
         assert "[engine]" in toml
         assert 'default = "vllm"' in toml
         assert "H100" in toml
+
+
+class TestSecurityConfig:
+    def test_security_config_defaults(self) -> None:
+        sc = SecurityConfig()
+        assert sc.enabled is True
+        assert sc.scan_input is True
+        assert sc.scan_output is True
+        assert sc.mode == "warn"
+        assert sc.secret_scanner is True
+        assert sc.pii_scanner is True
+        assert sc.enforce_tool_confirmation is True
+
+    def test_security_config_on_jarvis_config(self) -> None:
+        cfg = JarvisConfig()
+        assert isinstance(cfg.security, SecurityConfig)
+
+    def test_security_config_loads_from_toml(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "config.toml"
+        toml_file.write_text('[security]\nmode = "block"\nscan_input = false\n')
+        cfg = load_config(toml_file)
+        assert cfg.security.mode == "block"
+        assert cfg.security.scan_input is False
+
+    def test_security_config_in_default_toml(self) -> None:
+        output = generate_default_toml(HardwareInfo())
+        assert "[security]" in output
+
+
+class TestChannelConfig:
+    def test_channel_config_defaults(self) -> None:
+        cc = ChannelConfig()
+        assert cc.enabled is False
+        assert cc.gateway_url == "ws://127.0.0.1:18789/ws"
+        assert cc.default_agent == "simple"
+        assert cc.reconnect_interval == 5.0
+
+    def test_channel_config_on_jarvis_config(self) -> None:
+        cfg = JarvisConfig()
+        assert isinstance(cfg.channel, ChannelConfig)
+
+    def test_channel_config_loads_from_toml(self, tmp_path: Path) -> None:
+        toml_file = tmp_path / "config.toml"
+        toml_file.write_text(
+            '[channel]\nenabled = true\ngateway_url = "ws://custom:9999/ws"\n'
+        )
+        cfg = load_config(toml_file)
+        assert cfg.channel.enabled is True
+        assert cfg.channel.gateway_url == "ws://custom:9999/ws"
+
+    def test_channel_config_in_default_toml(self) -> None:
+        output = generate_default_toml(HardwareInfo())
+        assert "[channel]" in output

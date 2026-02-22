@@ -342,6 +342,59 @@ Available benchmarks:
 
 ---
 
+## `jarvis channel`
+
+Manage messaging channels for multi-platform communication via the OpenClaw gateway.
+
+### `jarvis channel list`
+
+List available channels from the connected gateway.
+
+```bash
+jarvis channel list
+jarvis channel list --gateway ws://custom-host:9999/ws
+```
+
+| Option                | Type   | Default | Description                          |
+|-----------------------|--------|---------|--------------------------------------|
+| `--gateway`           | string | config  | Override the gateway URL             |
+
+### `jarvis channel send`
+
+Send a message to a specific channel.
+
+```bash
+jarvis channel send slack "Hello from Jarvis!"
+jarvis channel send discord "Build complete" --gateway ws://custom:9999/ws
+```
+
+| Argument    | Type   | Description                          |
+|-------------|--------|--------------------------------------|
+| `TARGET`    | string | Channel name to send to              |
+| `MESSAGE`   | string | Message content                      |
+
+| Option                | Type   | Default | Description                          |
+|-----------------------|--------|---------|--------------------------------------|
+| `--gateway`           | string | config  | Override the gateway URL             |
+
+### `jarvis channel status`
+
+Show the channel bridge connection status.
+
+```bash
+jarvis channel status
+jarvis channel status --gateway ws://custom:9999/ws
+```
+
+| Option                | Type   | Default | Description                          |
+|-----------------------|--------|---------|--------------------------------------|
+| `--gateway`           | string | config  | Override the gateway URL             |
+
+!!! note "Channel Dependencies"
+    Channel commands require a running OpenClaw gateway. The bridge connects via WebSocket with HTTP fallback. Configure the gateway URL in `[channel]` config or via `--gateway`.
+
+---
+
 ## `jarvis serve`
 
 Start an OpenAI-compatible API server.
@@ -380,6 +433,9 @@ The server exposes the following OpenAI-compatible endpoints:
 | POST   | `/v1/chat/completions`   | Chat completions (streaming & non-streaming) |
 | GET    | `/v1/models`             | List available models          |
 | GET    | `/health`                | Health check                   |
+| GET    | `/v1/channels`           | List available messaging channels    |
+| POST   | `/v1/channels/send`      | Send a message to a channel          |
+| GET    | `/v1/channels/status`    | Channel bridge connection status     |
 
 **Example with curl:**
 

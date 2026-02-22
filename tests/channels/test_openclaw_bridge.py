@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from openjarvis.channels._stubs import ChannelStatus
+from openjarvis.channels._stubs import ChannelMessage, ChannelStatus
 from openjarvis.channels.openclaw_bridge import OpenClawChannelBridge
 from openjarvis.core.events import EventBus, EventType
 from openjarvis.core.registry import ChannelRegistry
@@ -310,3 +310,123 @@ class TestHttpUrlConversion:
     def test_http_url_channels(self) -> None:
         bridge = OpenClawChannelBridge(gateway_url="ws://127.0.0.1:18789/ws")
         assert bridge._http_url("/channels") == "http://127.0.0.1:18789/channels"
+
+
+# ---------------------------------------------------------------------------
+# _listener_loop() tests
+# ---------------------------------------------------------------------------
+
+
+def _make_bridge_with_mock_ws(
+    msg_json: str,
+    *,
+    bus: EventBus | None = None,
+) -> OpenClawChannelBridge:
+    """Return a bridge whose ``_ws.recv()`` returns *msg_json* once, then stops."""
+    bridge = OpenClawChannelBridge(bus=bus)
+    bridge._status = ChannelStatus.CONNECTED
+
+    call_count = 0
+
+    def mock_recv(timeout=None):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return msg_json
+        bridge._stop_event.set()
+        raise TimeoutError()
+
+    mock_ws = MagicMock()
+    mock_ws.recv = mock_recv
+    bridge._ws = mock_ws
+    return bridge
+
+
+_SAMPLE_MSG = json.dumps({
+    "channel": "slack",
+    "sender": "user1",
+    "content": "Hello!",
+    "message_id": "msg-1",
+    "conversation_id": "conv-1",
+    "metadata": {},
+})
+
+
+class TestListenerLoop:
+    def test_listener_receives_and_parses_message(self) -> None:
+        """Listener parses incoming JSON into a ChannelMessage."""
+        bridge = _make_bridge_with_mock_ws(_SAMPLE_MSG)
+        received: list[ChannelMessage] = []
+        bridge.on_message(lambda msg: received.append(msg))
+
+        bridge._listener_loop()
+
+        assert len(received) == 1
+        msg = received[0]
+        assert isinstance(msg, ChannelMessage)
+        assert msg.channel == "slack"
+        assert msg.sender == "user1"
+        assert msg.content == "Hello!"
+        assert msg.message_id == "msg-1"
+
+    def test_listener_invokes_all_handlers(self) -> None:
+        """All registered handlers are called for each message."""
+        bridge = _make_bridge_with_mock_ws(_SAMPLE_MSG)
+        calls_a: list[ChannelMessage] = []
+        calls_b: list[ChannelMessage] = []
+        bridge.on_message(lambda msg: calls_a.append(msg))
+        bridge.on_message(lambda msg: calls_b.append(msg))
+
+        bridge._listener_loop()
+
+        assert len(calls_a) == 1
+        assert len(calls_b) == 1
+
+    def test_listener_publishes_event(self) -> None:
+        """Listener publishes CHANNEL_MESSAGE_RECEIVED on the event bus."""
+        bus = EventBus(record_history=True)
+        bridge = _make_bridge_with_mock_ws(_SAMPLE_MSG, bus=bus)
+
+        bridge._listener_loop()
+
+        event_types = [e.event_type for e in bus.history]
+        assert EventType.CHANNEL_MESSAGE_RECEIVED in event_types
+        recv_event = next(
+            e for e in bus.history
+            if e.event_type == EventType.CHANNEL_MESSAGE_RECEIVED
+        )
+        assert recv_event.data["channel"] == "slack"
+        assert recv_event.data["sender"] == "user1"
+
+    def test_listener_stops_on_stop_event(self) -> None:
+        """Listener returns immediately when _stop_event is already set."""
+        bridge = OpenClawChannelBridge()
+        bridge._status = ChannelStatus.CONNECTED
+        bridge._ws = MagicMock()
+        bridge._stop_event.set()
+
+        handler = MagicMock()
+        bridge.on_message(handler)
+
+        # Should return immediately without calling any handler
+        import threading
+        t = threading.Thread(target=bridge._listener_loop)
+        t.start()
+        t.join(timeout=3.0)
+        assert not t.is_alive(), "_listener_loop did not exit in time"
+        handler.assert_not_called()
+
+    def test_listener_catches_handler_exceptions(self) -> None:
+        """A failing handler does not prevent subsequent handlers from running."""
+        bridge = _make_bridge_with_mock_ws(_SAMPLE_MSG)
+        second_calls: list[ChannelMessage] = []
+
+        def bad_handler(msg: ChannelMessage) -> None:
+            raise ValueError("boom")
+
+        bridge.on_message(bad_handler)
+        bridge.on_message(lambda msg: second_calls.append(msg))
+
+        bridge._listener_loop()
+
+        assert len(second_calls) == 1

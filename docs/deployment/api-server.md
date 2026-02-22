@@ -193,6 +193,57 @@ HTTP 503:
 
 Serves the built-in Savings Dashboard, an HTML page that displays real-time statistics on inference calls served locally and estimated cost savings compared to cloud API providers. The dashboard auto-refreshes every 5 seconds by polling the `/v1/savings` endpoint.
 
+### `GET /v1/channels`
+
+List available messaging channels from the connected OpenClaw gateway.
+
+#### Response
+
+```json
+{
+  "channels": ["slack", "discord", "telegram"]
+}
+```
+
+### `POST /v1/channels/send`
+
+Send a message to a specific channel.
+
+#### Request Body
+
+```json
+{
+  "target": "slack",
+  "message": "Hello from Jarvis!"
+}
+```
+
+#### Response
+
+```json
+{
+  "status": "sent",
+  "target": "slack"
+}
+```
+
+### `GET /v1/channels/status`
+
+Show the channel bridge connection status.
+
+#### Response
+
+```json
+{
+  "connected": true,
+  "gateway_url": "ws://127.0.0.1:18789/ws",
+  "channels": ["slack", "discord"]
+}
+```
+
+!!! note "Channel endpoints"
+    Channel endpoints require `[channel] enabled = true` in your config and a running OpenClaw gateway. When not configured, `GET /v1/channels` returns an empty list and other channel endpoints return 503.
+
 ## Streaming via SSE
 
 When `"stream": true` is set in the request, the server returns a `text/event-stream` response using Server-Sent Events (SSE). The response follows the same format as the OpenAI streaming API.

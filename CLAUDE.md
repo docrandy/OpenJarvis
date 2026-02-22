@@ -28,6 +28,9 @@ uv run jarvis telemetry stats        # Show aggregated telemetry stats
 uv run jarvis telemetry export --format json  # Export records as JSON
 uv run jarvis telemetry export --format csv   # Export records as CSV
 uv run jarvis telemetry clear --yes  # Delete all telemetry records
+uv run jarvis channel list           # List available messaging channels
+uv run jarvis channel send slack "Hello"  # Send a message to a channel
+uv run jarvis channel status         # Show channel bridge connection status
 uv run jarvis bench run              # Run all benchmarks against engine
 uv run jarvis bench run -n 20 --json # Run with 20 samples, JSON output
 uv run jarvis bench run -b latency -o results.jsonl  # Specific benchmark to file
@@ -130,12 +133,26 @@ OpenJarvis is a research framework for on-device AI organized around **four core
 - `wrapper.py` — `instrumented_generate()` wraps engine calls with timing and telemetry publishing
 - Dataclasses: `ModelStats`, `EngineStats`, `AggregatedStats`
 
+### Security (`src/openjarvis/security/`)
+
+- `_stubs.py` — `BaseScanner` ABC (abstract `scan()`, `redact()`)
+- `types.py` — `ThreatLevel`, `RedactionMode`, `ScanFinding`, `ScanResult`, `SecurityEvent`, `SecurityEventType`
+- `scanner.py` — `SecretScanner` (API keys, tokens, passwords, connection strings, private keys), `PIIScanner` (email, SSN, credit cards, phone, IP)
+- `guardrails.py` — `GuardrailsEngine` wraps any `InferenceEngine` with input/output scanning. Modes: WARN (pass-through + event), REDACT (replace sensitive content), BLOCK (raise `SecurityBlockError`). `stream()` does post-hoc scan of accumulated output.
+- `file_policy.py` — `is_sensitive_file()` checks filename against `DEFAULT_SENSITIVE_PATTERNS` (`.env`, `*.pem`, `*.key`, `credentials.*`, etc.). `filter_sensitive_paths()` filters path lists.
+- `audit.py` — `AuditLogger` persists security events to SQLite for compliance/forensics.
+
+### Channels (`src/openjarvis/channels/`)
+
+- `_stubs.py` — `BaseChannel` ABC (`connect()`, `disconnect()`, `send()`, `status()`, `list_channels()`, `on_message()`), `ChannelMessage` dataclass, `ChannelStatus` enum, `ChannelHandler` type
+- `openclaw_bridge.py` — `OpenClawChannelBridge`: WebSocket/HTTP bridge to OpenClaw gateway. Background listener thread, reconnect logic, handler registration, event bus integration. Registered as `"openclaw"` in `ChannelRegistry`.
+
 ### Core Module (`src/openjarvis/core/`)
 
-- `registry.py` — `RegistryBase[T]` generic base class adapted from IPW. Typed subclasses: `ModelRegistry`, `EngineRegistry`, `MemoryRegistry`, `AgentRegistry`, `ToolRegistry`, `RouterPolicyRegistry`, `BenchmarkRegistry`.
+- `registry.py` — `RegistryBase[T]` generic base class adapted from IPW. Typed subclasses: `ModelRegistry`, `EngineRegistry`, `MemoryRegistry`, `AgentRegistry`, `ToolRegistry`, `RouterPolicyRegistry`, `BenchmarkRegistry`, `ChannelRegistry`.
 - `types.py` — `Message`, `Conversation`, `ModelSpec`, `ToolResult`, `TelemetryRecord`, `StepType`, `TraceStep`, `Trace`.
-- `config.py` — `JarvisConfig` dataclass hierarchy with TOML loader. Includes `LearningConfig` (default_policy, reward_weights). User config lives at `~/.openjarvis/config.toml`. Hardware auto-detection populates defaults.
-- `events.py` — Pub/sub event bus for inter-pillar telemetry (synchronous dispatch).
+- `config.py` — `JarvisConfig` dataclass hierarchy with TOML loader. Includes `LearningConfig` (default_policy, reward_weights), `ChannelConfig` (enabled, gateway_url, default_agent, reconnect_interval), `SecurityConfig` (enabled, scan_input, scan_output, mode, secret_scanner, pii_scanner, audit_log_path, enforce_tool_confirmation). User config lives at `~/.openjarvis/config.toml`. Hardware auto-detection populates defaults. TOML sections: `[engine]`, `[intelligence]`, `[learning]`, `[memory]`, `[agent]`, `[server]`, `[telemetry]`, `[channel]`, `[security]`.
+- `events.py` — Pub/sub event bus for inter-pillar telemetry (synchronous dispatch). EventType values: INFERENCE_START/END, TOOL_CALL_START/END, MEMORY_STORE/RETRIEVE, AGENT_TURN_START/END, TELEMETRY_RECORD, TRACE_STEP/COMPLETE, CHANNEL_MESSAGE_RECEIVED/SENT, SECURITY_SCAN/ALERT/BLOCK.
 
 ### Docker & Deployment
 
@@ -147,11 +164,11 @@ OpenJarvis is a research framework for on-device AI organized around **four core
 
 ### Query Flow
 
-User query &rarr; Agentic Logic (determine tools/memory needs) &rarr; Memory retrieval &rarr; Context injection with source attribution &rarr; Learning/Router selects model (via RouterPolicyRegistry, heuristic or trace-driven) &rarr; Inference Engine generates response &rarr; Trace recorded to SQLite (full interaction sequence) &rarr; Telemetry recorded &rarr; Learning policies update from accumulated traces.
+User query &rarr; Security scanning (input) &rarr; Agentic Logic (determine tools/memory needs) &rarr; Memory retrieval &rarr; Context injection with source attribution &rarr; Learning/Router selects model (via RouterPolicyRegistry, heuristic or trace-driven) &rarr; Inference Engine generates response &rarr; Security scanning (output) &rarr; Trace recorded to SQLite (full interaction sequence) &rarr; Telemetry recorded &rarr; Learning policies update from accumulated traces.
 
 ### API Surface
 
-OpenAI-compatible server via `jarvis serve`: `POST /v1/chat/completions` and `GET /v1/models` with SSE streaming.
+OpenAI-compatible server via `jarvis serve`: `POST /v1/chat/completions`, `GET /v1/models`, `GET /v1/channels`, `POST /v1/channels/send`, `GET /v1/channels/status` with SSE streaming.
 
 ## Key Design Patterns
 

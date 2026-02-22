@@ -179,3 +179,93 @@ class TestGuardrailsEngineCleanPassthrough:
             result = ge.generate(messages, model="test")
             expected = "Nothing special here"
             assert result["content"] == expected, f"mode={mode}"
+
+
+# ---------------------------------------------------------------------------
+# stream() tests
+# ---------------------------------------------------------------------------
+
+
+async def _async_token_iter(tokens):
+    for t in tokens:
+        yield t
+
+
+@pytest.mark.asyncio
+class TestGuardrailsEngineStream:
+    async def test_stream_yields_tokens(self) -> None:
+        """stream() yields all tokens from the wrapped engine."""
+        mock = _make_mock_engine()
+        mock.stream = lambda messages, **kw: _async_token_iter(
+            ["Hello", " ", "world"],
+        )
+        ge = GuardrailsEngine(mock)
+
+        messages = [Message(role=Role.USER, content="hi")]
+        tokens = [t async for t in ge.stream(messages, model="test")]
+        assert tokens == ["Hello", " ", "world"]
+
+    async def test_stream_scans_output_post_hoc(self) -> None:
+        """stream() publishes SECURITY_ALERT after yielding sensitive tokens."""
+        bus = EventBus(record_history=True)
+        mock = _make_mock_engine()
+        mock.stream = lambda messages, **kw: _async_token_iter(
+            ["The key is ", "sk-abc123def456ghi789jkl012"],
+        )
+        ge = GuardrailsEngine(mock, bus=bus)
+
+        messages = [Message(role=Role.USER, content="show key")]
+        _ = [t async for t in ge.stream(messages, model="test")]
+
+        alerts = [e for e in bus.history if e.event_type == EventType.SECURITY_ALERT]
+        assert len(alerts) >= 1
+        assert alerts[0].data["direction"] == "output"
+        assert alerts[0].data["mode"] == "stream_post_hoc"
+
+    async def test_stream_publishes_alert_with_findings(self) -> None:
+        """Alert event contains a non-empty findings list with 'pattern' key."""
+        bus = EventBus(record_history=True)
+        mock = _make_mock_engine()
+        mock.stream = lambda messages, **kw: _async_token_iter(
+            ["The key is ", "sk-abc123def456ghi789jkl012"],
+        )
+        ge = GuardrailsEngine(mock, bus=bus)
+
+        messages = [Message(role=Role.USER, content="show key")]
+        _ = [t async for t in ge.stream(messages, model="test")]
+
+        alerts = [e for e in bus.history if e.event_type == EventType.SECURITY_ALERT]
+        assert len(alerts) >= 1
+        findings = alerts[0].data["findings"]
+        assert isinstance(findings, list) and len(findings) > 0
+        assert "pattern" in findings[0]
+
+    async def test_stream_skips_scan_when_disabled(self) -> None:
+        """No alert events when scan_output=False, even with sensitive content."""
+        bus = EventBus(record_history=True)
+        mock = _make_mock_engine()
+        mock.stream = lambda messages, **kw: _async_token_iter(
+            ["The key is ", "sk-abc123def456ghi789jkl012"],
+        )
+        ge = GuardrailsEngine(mock, scan_output=False, bus=bus)
+
+        messages = [Message(role=Role.USER, content="show key")]
+        _ = [t async for t in ge.stream(messages, model="test")]
+
+        alerts = [e for e in bus.history if e.event_type == EventType.SECURITY_ALERT]
+        assert len(alerts) == 0
+
+    async def test_stream_clean_content_no_events(self) -> None:
+        """Clean tokens produce no SECURITY_ALERT events."""
+        bus = EventBus(record_history=True)
+        mock = _make_mock_engine()
+        mock.stream = lambda messages, **kw: _async_token_iter(
+            ["Just", " a", " normal", " response"],
+        )
+        ge = GuardrailsEngine(mock, bus=bus)
+
+        messages = [Message(role=Role.USER, content="hello")]
+        _ = [t async for t in ge.stream(messages, model="test")]
+
+        alerts = [e for e in bus.history if e.event_type == EventType.SECURITY_ALERT]
+        assert len(alerts) == 0
