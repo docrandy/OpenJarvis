@@ -9,7 +9,13 @@ hide:
 
 **Programming abstractions for on-device AI.**
 
-OpenJarvis is a modular framework for building, running, and learning from local AI systems. It provides composable abstractions across four core pillars — Intelligence, Engine, Agentic Logic, and Memory — with a cross-cutting trace-driven learning system that improves routing decisions over time.
+OpenJarvis is a modular framework for building, running, and learning from local AI systems. It provides composable abstractions across **five pillars** with a cross-cutting trace-driven learning system:
+
+1. **Intelligence** -- The LM itself: Llama, Qwen, Claude, GPT, etc. Model catalog, generation defaults, quantization, and preferred engine configuration.
+2. **Agents** -- The agentic harness for running it: system prompt (including objective, available tools, available models), context from past turns, retry logic, looping logic, exit logic. Seven agent types from simple single-turn to recursive decomposition.
+3. **Tools** -- In an MCP interface, the available tools and LMs that can be called: web search, calculator, file read, code interpreter, retrieval systems, SQLite, sub-model calls, and any external MCP server.
+4. **Engine** -- The inference runtime: Ollama, SGLang, vLLM, llama.cpp, cloud APIs (OpenAI, Anthropic, Google). All implement the same `InferenceEngine` ABC.
+5. **Learning** -- Methodologies for improving Intelligence (weight updates via SFT) or Agents (changes to system prompt, tools available, models available, retry/looping/exit logic via agent advisor and ICL updater). Trace-driven feedback loop.
 
 Everything runs on your hardware. Cloud APIs are optional.
 
@@ -19,11 +25,11 @@ Everything runs on your hardware. Cloud APIs are optional.
 
 <div class="grid cards" markdown>
 
--   **Four Core Pillars**
+-   **Five Composable Pillars**
 
     ---
 
-    Intelligence (model routing), Engine (inference runtime), Agentic Logic (tool-calling agents), and Memory (persistent searchable storage) — each with a clear ABC interface and decorator-based registry.
+    Intelligence (the model), Agents (agentic harness), Tools (MCP-based tool system with storage), Engine (inference runtime), and Learning (trace-driven improvement) — each with a clear ABC interface and decorator-based registry.
 
 -   **5 Engine Backends**
 
@@ -59,7 +65,7 @@ Everything runs on your hardware. Cloud APIs are optional.
 
     ---
 
-    Every agent interaction is recorded as a trace. The learning system uses accumulated traces to improve model routing decisions. Pluggable router policies: heuristic, trace-driven, and GRPO.
+    Every agent interaction is recorded as a trace. The learning system improves Intelligence (SFT weight updates) and Agents (system prompt, tool selection, retry logic). Pluggable policies: heuristic, trace-driven, SFT, agent advisor, ICL updater, GRPO.
 
 -   **Python SDK**
 
@@ -126,19 +132,19 @@ jarvis bench run --json
 
 ## Project Status
 
-OpenJarvis v1.0 is complete. The framework includes the full four-pillar architecture, Python SDK, CLI, OpenAI-compatible API server, OpenClaw agent infrastructure, benchmarking framework, and Docker deployment. The test suite contains over 1,000 tests. Phase 6 (trace system and trace-driven learning) is in active development.
+OpenJarvis v1.5 (Phase 10) is complete. The framework includes the full five-pillar architecture, seven agent types, Python SDK, CLI, OpenAI-compatible API server, benchmarking framework, and Docker deployment. The test suite contains over 1,800 tests.
 
 | Component | Status |
 |-----------|--------|
-| Intelligence (model routing) | Stable |
+| Intelligence (model catalog + config) | Stable |
+| Agents (7 types: Simple, Orchestrator, NativeReAct, NativeOpenHands, RLM, OpenHands SDK, OpenClaw) | Stable |
+| Tools (MCP interface + 5 storage backends) | Stable |
 | Engine (5 backends) | Stable |
-| Agentic Logic (agents + tools) | Stable |
-| Memory (5 backends) | Stable |
+| Learning (routing, SFT, agent advisor, ICL updater) | Stable |
 | Python SDK | Stable |
 | CLI | Stable |
 | API Server | Stable |
-| Trace System | Active Development |
-| Trace-Driven Learning | Active Development |
+| Trace System | Stable |
 | Docker Deployment | Stable |
 
 ---
@@ -163,7 +169,7 @@ OpenJarvis v1.0 is complete. The framework includes the full four-pillar archite
 
     ---
 
-    Deep dive into the four-pillar design, registry pattern, query flow, and cross-cutting learning system.
+    Deep dive into the five-pillar design, registry pattern, query flow, and cross-cutting learning system.
 
 -   **[API Reference](api/index.md)**
 
