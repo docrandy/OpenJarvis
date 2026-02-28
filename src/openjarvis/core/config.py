@@ -813,6 +813,15 @@ class A2AConfig:
     enabled: bool = False
 
 
+@dataclass(slots=True)
+class OperatorsConfig:
+    """Operator lifecycle settings."""
+
+    enabled: bool = False
+    manifests_dir: str = "~/.openjarvis/operators"
+    auto_activate: str = ""  # Comma-separated operator IDs
+
+
 @dataclass
 class JarvisConfig:
     """Top-level configuration for OpenJarvis."""
@@ -833,6 +842,7 @@ class JarvisConfig:
     workflow: WorkflowConfig = field(default_factory=WorkflowConfig)
     sessions: SessionConfig = field(default_factory=SessionConfig)
     a2a: A2AConfig = field(default_factory=A2AConfig)
+    operators: OperatorsConfig = field(default_factory=OperatorsConfig)
 
     @property
     def memory(self) -> StorageConfig:
@@ -926,7 +936,7 @@ def load_config(path: Optional[Path] = None) -> JarvisConfig:
             "engine", "intelligence", "learning", "agent",
             "server", "telemetry", "traces", "security",
             "channel", "tools", "sandbox", "scheduler",
-            "workflow", "sessions", "a2a",
+            "workflow", "sessions", "a2a", "operators",
         )
         for section_name in top_sections:
             if section_name in data:
@@ -1140,6 +1150,7 @@ ssrf_protection = true
 __all__ = [
     "A2AConfig",
     "AgentConfig",
+    "OperatorsConfig",
     "AgentLearningConfig",
     "BlueBubblesChannelConfig",
     "BrowserConfig",

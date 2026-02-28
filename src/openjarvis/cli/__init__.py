@@ -7,6 +7,7 @@ import click
 import openjarvis
 from openjarvis.cli.add_cmd import add
 from openjarvis.cli.agent_cmd import agent
+from openjarvis.cli.operators_cmd import operators
 from openjarvis.cli.ask import ask
 from openjarvis.cli.bench_cmd import bench
 from openjarvis.cli.channel_cmd import channel
@@ -50,6 +51,7 @@ cli.add_command(restart, "restart")
 cli.add_command(status, "status")
 cli.add_command(vault, "vault")
 cli.add_command(add, "add")
+cli.add_command(operators, "operators")
 
 
 def main() -> None:

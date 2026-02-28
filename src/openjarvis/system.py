@@ -39,6 +39,7 @@ class JarvisSystem:
     workflow_engine: Optional[Any] = None  # WorkflowEngine
     session_store: Optional[Any] = None  # SessionStore
     capability_policy: Optional[Any] = None  # CapabilityPolicy
+    operator_manager: Optional[Any] = None  # OperatorManager
 
     def ask(
         self,
@@ -49,6 +50,8 @@ class JarvisSystem:
         max_tokens: Optional[int] = None,
         agent: Optional[str] = None,
         tools: Optional[List[str]] = None,
+        system_prompt: Optional[str] = None,
+        operator_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute a query through the system and return a result dict."""
         if temperature is None:
@@ -82,6 +85,7 @@ class JarvisSystem:
         if use_agent and use_agent != "none":
             return self._run_agent(
                 query, messages, use_agent, tools, temperature, max_tokens,
+                system_prompt=system_prompt, operator_id=operator_id,
             )
 
         # Direct engine mode
@@ -98,6 +102,7 @@ class JarvisSystem:
 
     def _run_agent(
         self, query, messages, agent_name, tool_names, temperature, max_tokens,
+        *, system_prompt=None, operator_id=None,
     ) -> Dict[str, Any]:
         """Run through an agent."""
         from openjarvis.agents._stubs import AgentContext
@@ -133,6 +138,12 @@ class JarvisSystem:
         if getattr(agent_cls, "accepts_tools", False):
             agent_kwargs["tools"] = agent_tools
             agent_kwargs["max_turns"] = self.config.agent.max_turns
+        if system_prompt is not None:
+            agent_kwargs["system_prompt"] = system_prompt
+        if operator_id is not None:
+            agent_kwargs["operator_id"] = operator_id
+            agent_kwargs["session_store"] = self.session_store
+            agent_kwargs["memory_backend"] = self.memory_backend
 
         try:
             ag = agent_cls(self.engine, self.model, **agent_kwargs)

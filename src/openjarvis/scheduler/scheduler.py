@@ -223,10 +223,17 @@ class TaskScheduler:
                     if task.tools
                     else []
                 )
+                ask_kwargs: Dict[str, Any] = {
+                    "agent": task.agent,
+                    "tools": tools_list if tools_list else None,
+                }
+                meta = task.metadata or {}
+                if meta.get("operator_id"):
+                    ask_kwargs["system_prompt"] = meta.get("system_prompt", "")
+                    ask_kwargs["operator_id"] = meta["operator_id"]
                 result_text = self._system.ask(
                     task.prompt,
-                    agent=task.agent,
-                    tools=tools_list if tools_list else None,
+                    **ask_kwargs,
                 )
             else:
                 result_text = f"[dry-run] Would execute: {task.prompt}"

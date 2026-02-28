@@ -58,6 +58,9 @@ class EventType(str, Enum):
     # Phase 16 — A2A Protocol
     A2A_TASK_RECEIVED = "a2a_task_received"
     A2A_TASK_COMPLETED = "a2a_task_completed"
+    # Phase 22 — Operators
+    OPERATOR_TICK_START = "operator_tick_start"
+    OPERATOR_TICK_END = "operator_tick_end"
 
 
 @dataclass(slots=True)
