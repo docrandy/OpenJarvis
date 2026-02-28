@@ -152,6 +152,155 @@ def print_metrics_table(console: Console, summary: RunSummary) -> None:
     console.print(headline)
 
 
+def _stats_table(title: str, rows: list[tuple[str, Optional[MetricStats], int]]) -> Table:
+    """Build a stats table with Avg/Median/Min/Max/Std columns."""
+    table = Table(
+        title=f"[bold]{title}[/bold]",
+        show_header=True,
+        header_style="bold bright_white",
+        border_style="bright_blue",
+        title_style="bold cyan",
+    )
+    table.add_column("Metric", style="cyan", no_wrap=True)
+    table.add_column("Avg", justify="right")
+    table.add_column("Median", justify="right")
+    table.add_column("Min", justify="right")
+    table.add_column("Max", justify="right")
+    table.add_column("Std", justify="right")
+    for label, stats, decimals in rows:
+        if stats is not None:
+            table.add_row(
+                label,
+                _fmt(stats.mean, decimals),
+                _fmt(stats.median, decimals),
+                _fmt(stats.min, decimals),
+                _fmt(stats.max, decimals),
+                _fmt(stats.std, decimals),
+            )
+    return table
+
+
+def print_accuracy_panel(console: Console, summary: RunSummary) -> None:
+    """Print accuracy panel with per-subject breakdown."""
+    lines = [
+        f"[bold]Overall Accuracy    {summary.accuracy:.1%}[/bold]"
+        f"  ({summary.correct}/{summary.scored_samples})",
+    ]
+    for subj, stats in sorted(summary.per_subject.items()):
+        acc = stats.get("accuracy", 0.0)
+        correct = int(stats.get("correct", 0))
+        scored = int(stats.get("scored", 0))
+        lines.append(f"  {subj:<20s} {acc:.1%}  ({correct}/{scored})")
+    body = "\n".join(lines)
+    panel = Panel(body, title="[bold]Accuracy[/bold]", border_style="green", expand=False)
+    console.print(panel)
+
+
+def print_latency_table(console: Console, summary: RunSummary) -> None:
+    """Print latency, throughput, and token stats table."""
+    table = _stats_table("Latency & Throughput", [
+        ("Latency (s)", summary.latency_stats, 2),
+        ("TTFT (s)", summary.ttft_stats, 3),
+        ("Throughput (tok/s)", summary.throughput_stats, 1),
+        ("Avg Input Tokens", summary.input_token_stats, 1),
+        ("Avg Output Tokens", summary.output_token_stats, 1),
+    ])
+    if table.row_count > 0:
+        console.print(table)
+
+
+def print_energy_table(console: Console, summary: RunSummary) -> None:
+    """Print energy, efficiency, and IPJ/IPW table."""
+    table = _stats_table("Energy & Efficiency", [
+        ("Energy (J)", summary.energy_stats, 1),
+        ("Power (W)", summary.power_stats, 1),
+        ("GPU Util (%)", summary.gpu_utilization_stats, 1),
+        ("Energy/OutTok (J)", summary.energy_per_output_token_stats, 6),
+        ("MFU (%)", summary.mfu_stats, 3),
+        ("MBU (%)", summary.mbu_stats, 3),
+    ])
+    if table.row_count > 0:
+        console.print(table)
+    # Headline: IPW, IPJ, Total Energy
+    parts: list[str] = []
+    if summary.ipw_stats:
+        parts.append(f"[bold]IPW (acc/W):[/bold] {summary.ipw_stats.mean:.6f}")
+    if summary.ipj_stats:
+        parts.append(f"[bold]IPJ (acc/J):[/bold] {summary.ipj_stats.mean:.2e}")
+    if summary.total_energy_joules > 0:
+        val = summary.total_energy_joules
+        unit = "kJ" if val > 1000 else "J"
+        display = val / 1000 if val > 1000 else val
+        parts.append(f"[bold]Total Energy:[/bold] {display:.1f} {unit}")
+    if summary.avg_power_watts > 0:
+        parts.append(f"[bold]Avg Power:[/bold] {summary.avg_power_watts:.1f} W")
+    if parts:
+        console.print("  ".join(parts))
+
+
+def print_trace_summary(console: Console, summary: RunSummary) -> None:
+    """Print agentic trace step-type breakdown."""
+    sts = summary.trace_step_type_stats
+    if not sts:
+        return
+    total_steps = sum(s.get("count", 0) for s in sts.values())
+    avg_per_sample = total_steps / summary.scored_samples if summary.scored_samples > 0 else 0
+
+    table = Table(
+        title="[bold]Agentic Trace Summary[/bold]",
+        show_header=True,
+        header_style="bold bright_white",
+        border_style="bright_blue",
+        title_style="bold cyan",
+        caption=f"Total Steps: {total_steps}  |  Avg Steps/Sample: {avg_per_sample:.1f}",
+    )
+    table.add_column("Step Type", style="cyan", no_wrap=True)
+    table.add_column("Count", justify="right")
+    table.add_column("Avg Duration", justify="right")
+    table.add_column("Avg Energy (J)", justify="right")
+    table.add_column("Avg In Tokens", justify="right")
+    table.add_column("Avg Out Tokens", justify="right")
+
+    for stype, data in sorted(sts.items()):
+        count = data.get("count", 0)
+        avg_dur = data.get("avg_duration", 0.0)
+        total_e = data.get("total_energy", 0.0)
+        avg_e = total_e / count if count > 0 else 0.0
+        avg_in = data.get("avg_input_tokens", 0.0)
+        avg_out = data.get("avg_output_tokens", 0.0)
+        table.add_row(
+            stype,
+            str(count),
+            f"{avg_dur:.2f}s",
+            f"{avg_e:.1f}" if avg_e > 0 else "\u2014",
+            f"{avg_in:.0f}" if avg_in > 0 else "\u2014",
+            f"{avg_out:.0f}" if avg_out > 0 else "\u2014",
+        )
+    console.print(table)
+
+
+def print_compact_table(console: Console, summary: RunSummary) -> None:
+    """Print a single dense metrics table (legacy behavior, enhanced)."""
+    print_metrics_table(console, summary)
+
+
+def print_full_results(
+    console: Console,
+    summary: RunSummary,
+    *,
+    compact: bool = False,
+    trace_detail: bool = False,
+) -> None:
+    """Orchestrate all result panels."""
+    if compact:
+        print_compact_table(console, summary)
+        return
+    print_accuracy_panel(console, summary)
+    print_latency_table(console, summary)
+    print_energy_table(console, summary)
+    print_trace_summary(console, summary)
+
+
 def print_subject_table(
     console: Console,
     per_subject: Dict[str, Dict[str, float]],
@@ -248,11 +397,17 @@ def print_completion(
 
 __all__ = [
     "OPENJARVIS_BANNER",
+    "print_accuracy_panel",
     "print_banner",
-    "print_section",
-    "print_run_header",
+    "print_compact_table",
+    "print_completion",
+    "print_energy_table",
+    "print_full_results",
+    "print_latency_table",
     "print_metrics_table",
+    "print_run_header",
+    "print_section",
     "print_subject_table",
     "print_suite_summary",
-    "print_completion",
+    "print_trace_summary",
 ]
