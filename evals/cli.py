@@ -20,6 +20,7 @@ from rich.progress import (
 from evals.core.display import (
     print_banner,
     print_completion,
+    print_full_results,
     print_metrics_table,
     print_run_header,
     print_section,
@@ -119,13 +120,16 @@ def _print_summary(
     console: Optional[Console] = None,
     output_path: Optional[Path] = None,
     traces_dir: Optional[Path] = None,
+    *,
+    compact: bool = False,
+    trace_detail: bool = False,
 ) -> None:
     """Print a single run summary using Rich display primitives."""
     if console is None:
         console = Console()
     print_section(console, "Results")
-    print_metrics_table(console, summary)
-    if summary.per_subject and len(summary.per_subject) > 1:
+    print_full_results(console, summary, compact=compact, trace_detail=trace_detail)
+    if not compact and summary.per_subject and len(summary.per_subject) > 1:
         print_subject_table(console, summary.per_subject)
     print_completion(console, summary, output_path, traces_dir)
 
@@ -266,11 +270,14 @@ def main():
               help="Enable telemetry collection during eval")
 @click.option("--gpu-metrics/--no-gpu-metrics", default=False,
               help="Enable GPU metrics collection")
+@click.option("--compact", is_flag=True, default=False, help="Dense single-table output")
+@click.option("--trace-detail", is_flag=True, default=False, help="Full per-step trace listing")
 @click.option("-v", "--verbose", is_flag=True, help="Verbose logging")
 @click.pass_context
 def run(ctx, config_path, benchmark, backend, model, engine_key, agent_name,
         tools, max_samples, max_workers, judge_model, output_path, seed,
-        dataset_split, temperature, max_tokens, telemetry, gpu_metrics, verbose):
+        dataset_split, temperature, max_tokens, telemetry, gpu_metrics,
+        compact, trace_detail, verbose):
     """Run a single benchmark evaluation, or a full suite from a TOML config."""
     _setup_logging(verbose)
 
@@ -340,6 +347,8 @@ def run(ctx, config_path, benchmark, backend, model, engine_key, agent_name,
         console=console,
         output_path=_output_path,
         traces_dir=_traces_dir,
+        compact=compact,
+        trace_detail=trace_detail,
     )
 
 
