@@ -6,7 +6,7 @@ from pathlib import Path
 
 from openjarvis.core.events import EventBus, EventType
 from openjarvis.core.registry import MemoryRegistry
-from openjarvis.memory.sqlite import SQLiteMemory
+from openjarvis.tools.storage.sqlite import SQLiteMemory
 
 
 def _make_backend(tmp_path: Path) -> SQLiteMemory:

@@ -1,8 +1,4 @@
-"""Storage pillar — persistent searchable storage (canonical location).
-
-Previously ``openjarvis.memory``, which now re-exports from here for
-backward compatibility.
-"""
+"""Storage pillar — persistent searchable storage."""
 
 from __future__ import annotations
 

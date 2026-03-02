@@ -399,7 +399,7 @@ class TestMemoryPipeline:
     """Index and retrieve across available backends."""
 
     def test_sqlite_index_and_retrieve(self, tmp_path):
-        from openjarvis.memory.sqlite import SQLiteMemory
+        from openjarvis.tools.storage.sqlite import SQLiteMemory
 
         backend = SQLiteMemory(db_path=str(tmp_path / "mem.db"))
         backend.store(
@@ -416,7 +416,7 @@ class TestMemoryPipeline:
 
     def test_bm25_index_and_retrieve(self, tmp_path):
         try:
-            from openjarvis.memory.bm25 import BM25Memory
+            from openjarvis.tools.storage.bm25 import BM25Memory
         except ImportError:
             pytest.skip("rank_bm25 not installed")
 

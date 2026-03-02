@@ -29,7 +29,7 @@ from openjarvis.telemetry.store import TelemetryStore
 def _get_memory_backend(config):
     """Try to instantiate the memory backend, return None on failure."""
     try:
-        import openjarvis.memory  # noqa: F401
+        import openjarvis.tools.storage  # noqa: F401
         from openjarvis.core.registry import MemoryRegistry
 
         key = config.memory.default_backend
@@ -127,7 +127,7 @@ def _run_agent(
     # Inject memory context into conversation if available
     if config.agent.context_from_memory:
         try:
-            from openjarvis.memory.context import ContextConfig, inject_context
+            from openjarvis.tools.storage.context import ContextConfig, inject_context
 
             backend = _get_memory_backend(config)
             if backend is not None:
@@ -301,7 +301,7 @@ def ask(
     # Memory-augmented context injection
     if not no_context and config.agent.context_from_memory:
         try:
-            from openjarvis.memory.context import (
+            from openjarvis.tools.storage.context import (
                 ContextConfig,
                 inject_context,
             )

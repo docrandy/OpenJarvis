@@ -65,8 +65,8 @@ class TestStorageStubs:
 
     def test_backward_compat_import(self) -> None:
         """Memory imports should still work via shim."""
-        from openjarvis.memory._stubs import MemoryBackend as MB
-        from openjarvis.memory._stubs import RetrievalResult as RR
+        from openjarvis.tools.storage._stubs import MemoryBackend as MB
+        from openjarvis.tools.storage._stubs import RetrievalResult as RR
         assert MB is MemoryBackend
         assert RR is RetrievalResult
 
@@ -76,7 +76,7 @@ class TestStorageStubs:
         assert MB is MemoryBackend
 
     def test_sqlite_backward_compat(self) -> None:
-        """SQLiteMemory should be importable from both locations."""
-        from openjarvis.memory.sqlite import SQLiteMemory as S2
+        """SQLiteMemory should be importable from the canonical location."""
         from openjarvis.tools.storage.sqlite import SQLiteMemory as S1
-        assert S1 is S2
+
+        assert S1 is not None

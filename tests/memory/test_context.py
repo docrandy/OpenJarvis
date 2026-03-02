@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from openjarvis.core.events import EventBus, EventType
 from openjarvis.core.types import Message, Role
-from openjarvis.memory._stubs import MemoryBackend, RetrievalResult
-from openjarvis.memory.context import (
+from openjarvis.tools.storage._stubs import MemoryBackend, RetrievalResult
+from openjarvis.tools.storage.context import (
     ContextConfig,
     build_context_message,
     format_context,

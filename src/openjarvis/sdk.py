@@ -26,14 +26,14 @@ class MemoryHandle:
         if self._backend is not None:
             return self._backend
 
-        import openjarvis.memory  # noqa: F401
+        import openjarvis.tools.storage  # noqa: F401
         from openjarvis.core.registry import MemoryRegistry
 
         key = self._config.memory.default_backend
         if not MemoryRegistry.contains(key):
             # Register built-in backends
             try:
-                from openjarvis.memory.sqlite import SqliteMemory  # noqa: F401
+                from openjarvis.tools.storage.sqlite import SQLiteMemory  # noqa: F401
             except ImportError:
                 pass
 
@@ -56,8 +56,8 @@ class MemoryHandle:
         chunk_overlap: int = 64,
     ) -> Dict[str, Any]:
         """Index a file or directory into memory."""
-        from openjarvis.memory.chunking import ChunkConfig
-        from openjarvis.memory.ingest import ingest_path
+        from openjarvis.tools.storage.chunking import ChunkConfig
+        from openjarvis.tools.storage.ingest import ingest_path
 
         backend = self._get_backend()
         cfg = ChunkConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -388,7 +388,10 @@ class Jarvis:
         if context and self._config.agent.context_from_memory:
             try:
                 from openjarvis.cli.ask import _get_memory_backend
-                from openjarvis.memory.context import ContextConfig, inject_context
+                from openjarvis.tools.storage.context import (
+                    ContextConfig,
+                    inject_context,
+                )
 
                 backend = _get_memory_backend(self._config)
                 if backend is not None:
@@ -428,7 +431,7 @@ class Jarvis:
         """Inject memory context into messages."""
         try:
             from openjarvis.cli.ask import _get_memory_backend
-            from openjarvis.memory.context import ContextConfig, inject_context
+            from openjarvis.tools.storage.context import ContextConfig, inject_context
 
             backend = _get_memory_backend(self._config)
             if backend is not None:

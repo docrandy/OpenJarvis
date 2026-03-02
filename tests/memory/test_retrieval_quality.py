@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from openjarvis.core.registry import MemoryRegistry
-from openjarvis.memory.sqlite import SQLiteMemory
+from openjarvis.tools.storage.sqlite import SQLiteMemory
 
 # ---------------------------------------------------------------------------
 # Shared corpus
@@ -38,7 +38,9 @@ def _make_sqlite(tmp_path):
 
 
 def _make_bm25():
-    bm25_mod = pytest.importorskip("openjarvis.memory.bm25", exc_type=ImportError)
+    bm25_mod = pytest.importorskip(
+        "openjarvis.tools.storage.bm25", exc_type=ImportError,
+    )
     BM25Memory = bm25_mod.BM25Memory
     if not MemoryRegistry.contains("bm25"):
         MemoryRegistry.register_value("bm25", BM25Memory)

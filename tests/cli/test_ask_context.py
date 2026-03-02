@@ -31,7 +31,7 @@ def test_get_memory_backend_returns_none_when_empty(
     """_get_memory_backend returns None when no docs indexed."""
     from openjarvis.core.config import JarvisConfig, MemoryConfig
     from openjarvis.core.registry import MemoryRegistry
-    from openjarvis.memory.sqlite import SQLiteMemory
+    from openjarvis.tools.storage.sqlite import SQLiteMemory
 
     if not MemoryRegistry.contains("sqlite"):
         MemoryRegistry.register_value("sqlite", SQLiteMemory)
@@ -52,7 +52,7 @@ def test_get_memory_backend_returns_backend_with_docs(
     """_get_memory_backend returns a backend when docs exist."""
     from openjarvis.core.config import JarvisConfig, MemoryConfig
     from openjarvis.core.registry import MemoryRegistry
-    from openjarvis.memory.sqlite import SQLiteMemory
+    from openjarvis.tools.storage.sqlite import SQLiteMemory
 
     if not MemoryRegistry.contains("sqlite"):
         MemoryRegistry.register_value("sqlite", SQLiteMemory)

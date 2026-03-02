@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from openjarvis.core.events import EventBus, EventType
 from openjarvis.core.registry import MemoryRegistry
-from openjarvis.memory._stubs import MemoryBackend, RetrievalResult
-from openjarvis.memory.hybrid import (
+from openjarvis.tools.storage._stubs import MemoryBackend, RetrievalResult
+from openjarvis.tools.storage.hybrid import (
     HybridMemory,
     reciprocal_rank_fusion,
 )

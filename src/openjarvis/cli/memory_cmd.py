@@ -12,8 +12,8 @@ from rich.table import Table
 
 from openjarvis.core.config import load_config
 from openjarvis.core.registry import MemoryRegistry
-from openjarvis.memory.chunking import ChunkConfig
-from openjarvis.memory.ingest import ingest_path
+from openjarvis.tools.storage.chunking import ChunkConfig
+from openjarvis.tools.storage.ingest import ingest_path
 
 
 def _get_backend(backend_key: str | None = None):
@@ -22,7 +22,7 @@ def _get_backend(backend_key: str | None = None):
     key = backend_key or config.memory.default_backend
 
     # Ensure backends are registered
-    import openjarvis.memory  # noqa: F401
+    import openjarvis.tools.storage  # noqa: F401
 
     if not MemoryRegistry.contains(key):
         raise click.ClickException(

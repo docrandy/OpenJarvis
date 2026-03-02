@@ -545,7 +545,7 @@ class SystemBuilder:
     def _resolve_memory(self, config):
         """Resolve memory backend."""
         try:
-            import openjarvis.memory  # noqa: F401 -- trigger registration
+            import openjarvis.tools.storage  # noqa: F401 -- trigger registration
             from openjarvis.core.registry import MemoryRegistry
 
             key = config.memory.default_backend

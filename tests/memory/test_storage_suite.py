@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from openjarvis.core.registry import MemoryRegistry
-from openjarvis.memory.sqlite import SQLiteMemory
+from openjarvis.tools.storage.sqlite import SQLiteMemory
 
 # ---------------------------------------------------------------------------
 # Backend factory helpers
@@ -19,7 +19,9 @@ def _make_sqlite(tmp_path):
 
 
 def _make_bm25():
-    bm25_mod = pytest.importorskip("openjarvis.memory.bm25", exc_type=ImportError)
+    bm25_mod = pytest.importorskip(
+        "openjarvis.tools.storage.bm25", exc_type=ImportError,
+    )
     BM25Memory = bm25_mod.BM25Memory
     if not MemoryRegistry.contains("bm25"):
         MemoryRegistry.register_value("bm25", BM25Memory)
@@ -33,13 +35,22 @@ def _make_backend(key, tmp_path):
     elif key == "bm25":
         return _make_bm25()
     elif key == "faiss":
-        mod = pytest.importorskip("openjarvis.memory.faiss", exc_type=ImportError)
+        mod = pytest.importorskip(
+            "openjarvis.tools.storage.faiss_backend",
+            exc_type=ImportError,
+        )
         return mod.FAISSMemory(db_path=str(tmp_path / "faiss"))
     elif key == "colbert":
-        mod = pytest.importorskip("openjarvis.memory.colbert", exc_type=ImportError)
+        mod = pytest.importorskip(
+            "openjarvis.tools.storage.colbert_backend",
+            exc_type=ImportError,
+        )
         return mod.ColBERTMemory(db_path=str(tmp_path / "colbert"))
     elif key == "hybrid":
-        mod = pytest.importorskip("openjarvis.memory.hybrid", exc_type=ImportError)
+        mod = pytest.importorskip(
+            "openjarvis.tools.storage.hybrid",
+            exc_type=ImportError,
+        )
         sqlite = _make_sqlite(tmp_path)
         bm25 = _make_bm25()
         return mod.HybridMemory(backends=[sqlite, bm25])

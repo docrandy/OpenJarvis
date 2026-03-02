@@ -132,5 +132,5 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "W"]
 
 [tool.ruff.lint.per-file-ignores]
-"evals/datasets/*.py" = ["E501"]
-"evals/scorers/*.py" = ["E501"]
+"src/openjarvis/evals/datasets/*.py" = ["E501"]
+"src/openjarvis/evals/scorers/*.py" = ["E501"]
