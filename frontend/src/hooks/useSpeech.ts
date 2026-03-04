@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { transcribeAudio, fetchSpeechHealth } from '../api/client';
+import { transcribeAudio, fetchSpeechHealth } from '../lib/api';
 
 export type SpeechState = 'idle' | 'recording' | 'transcribing';
 
