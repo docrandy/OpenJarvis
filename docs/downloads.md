@@ -25,11 +25,11 @@ processing happens on your local machine — the app connects to the backend you
 
 | Platform | Download | Notes |
 |----------|----------|-------|
-| macOS (Apple Silicon) | [:material-download: **OpenJarvis.dmg**](https://github.com/HazyResearch/OpenJarvis/releases/latest/download/OpenJarvis_aarch64.dmg) | M1/M2/M3/M4 Macs |
-| macOS (Intel) | [:material-download: **OpenJarvis.dmg**](https://github.com/HazyResearch/OpenJarvis/releases/latest/download/OpenJarvis_x64.dmg) | Intel Macs (2020 and earlier) |
-| Windows (64-bit) | [:material-download: **OpenJarvis-setup.exe**](https://github.com/HazyResearch/OpenJarvis/releases/latest/download/OpenJarvis_x64-setup.exe) | Windows 10+ |
-| Linux (DEB) | [:material-download: **OpenJarvis.deb**](https://github.com/HazyResearch/OpenJarvis/releases/latest/download/OpenJarvis_amd64.deb) | Ubuntu, Debian |
-| Linux (RPM) | [:material-download: **OpenJarvis.rpm**](https://github.com/HazyResearch/OpenJarvis/releases/latest/download/OpenJarvis_amd64.rpm) | Fedora, RHEL |
+| macOS (Apple Silicon) | [:material-download: **OpenJarvis.dmg**](https://github.com/HazyResearch/OpenJarvis/releases/download/desktop-latest/OpenJarvis_1.0.0_aarch64.dmg) | M1/M2/M3/M4 Macs |
+| Windows (64-bit) | [:material-download: **OpenJarvis-setup.exe**](https://github.com/HazyResearch/OpenJarvis/releases/download/desktop-latest/OpenJarvis_1.0.0_x64-setup.exe) | Windows 10+ |
+| Linux (DEB) | [:material-download: **OpenJarvis.deb**](https://github.com/HazyResearch/OpenJarvis/releases/download/desktop-latest/OpenJarvis_1.0.0_amd64.deb) | Ubuntu, Debian |
+| Linux (RPM) | [:material-download: **OpenJarvis.rpm**](https://github.com/HazyResearch/OpenJarvis/releases/download/desktop-latest/OpenJarvis-1.0.0-1.x86_64.rpm) | Fedora, RHEL |
+| Linux (AppImage) | [:material-download: **OpenJarvis.AppImage**](https://github.com/HazyResearch/OpenJarvis/releases/download/desktop-latest/OpenJarvis_1.0.0_amd64.AppImage) | Any distro |
 
 !!! tip "All releases"
     Browse all versions on the [GitHub Releases](https://github.com/HazyResearch/OpenJarvis/releases) page.
