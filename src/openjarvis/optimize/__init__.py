@@ -1,6 +1,11 @@
 """Optimization framework for OpenJarvis configuration tuning."""
 
+from openjarvis.optimize.config import load_optimize_config
+from openjarvis.optimize.llm_optimizer import LLMOptimizer
+from openjarvis.optimize.optimizer import OptimizationEngine
 from openjarvis.optimize.search_space import DEFAULT_SEARCH_SPACE, build_search_space
+from openjarvis.optimize.store import OptimizationStore
+from openjarvis.optimize.trial_runner import TrialRunner
 from openjarvis.optimize.types import (
     OptimizationRun,
     SearchDimension,
@@ -10,11 +15,16 @@ from openjarvis.optimize.types import (
 )
 
 __all__ = [
+    "DEFAULT_SEARCH_SPACE",
+    "LLMOptimizer",
+    "OptimizationEngine",
+    "OptimizationRun",
+    "OptimizationStore",
     "SearchDimension",
     "SearchSpace",
     "TrialConfig",
     "TrialResult",
-    "OptimizationRun",
+    "TrialRunner",
     "build_search_space",
-    "DEFAULT_SEARCH_SPACE",
+    "load_optimize_config",
 ]
