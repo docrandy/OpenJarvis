@@ -22,7 +22,7 @@ class _OpenAICompatibleEngine(InferenceEngine):
     engine_id: str = ""
     _default_host: str = "http://localhost:8000"
 
-    def __init__(self, host: str | None = None, *, timeout: float = 120.0) -> None:
+    def __init__(self, host: str | None = None, *, timeout: float = 600.0) -> None:
         self._host = (host or self._default_host).rstrip("/")
         self._client = httpx.Client(base_url=self._host, timeout=timeout)
 

@@ -21,6 +21,7 @@ PRICING: Dict[str, tuple[float, float]] = {
     "gpt-4o": (2.50, 10.00),
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-5": (10.00, 30.00),
+    "gpt-5.4": (15.00, 60.00),
     "gpt-5-mini": (0.25, 2.00),
     "o3-mini": (1.10, 4.40),
     "claude-sonnet-4-20250514": (3.00, 15.00),
@@ -33,10 +34,14 @@ PRICING: Dict[str, tuple[float, float]] = {
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-3-pro": (2.00, 12.00),
     "gemini-3-flash": (0.50, 3.00),
+    "gemini-3.1-pro-preview": (2.50, 15.00),
+    "gemini-3-flash-preview": (0.50, 3.00),
 }
 
 # Well-known model IDs per provider
-_OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5-mini", "o3-mini"]
+_OPENAI_MODELS = [
+    "gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5.4", "gpt-5-mini", "o3-mini",
+]
 _ANTHROPIC_MODELS = [
     "claude-sonnet-4-20250514",
     "claude-opus-4-20250514",
@@ -50,6 +55,8 @@ _GOOGLE_MODELS = [
     "gemini-2.5-flash",
     "gemini-3-pro",
     "gemini-3-flash",
+    "gemini-3.1-pro-preview",
+    "gemini-3-flash-preview",
 ]
 
 
@@ -64,8 +71,10 @@ def _is_google_model(model: str) -> bool:
 def _is_openai_reasoning_model(model: str) -> bool:
     """Check if model is an OpenAI reasoning model that restricts temperature."""
     m = model.lower()
-    # o1/o3 series and gpt-5-mini dated snapshots are reasoning models
-    return m.startswith(("o1", "o3")) or "gpt-5-mini-" in m
+    # o1/o3 series and gpt-5-mini (all variants) are reasoning models
+    if m.startswith(("o1", "o3")):
+        return True
+    return m == "gpt-5-mini" or m.startswith("gpt-5-mini-")
 
 
 def estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:

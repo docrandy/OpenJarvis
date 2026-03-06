@@ -100,6 +100,12 @@ fn openjarvis_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<telemetry::PyTelemetryStore>()?;
     m.add_class::<telemetry::PyTelemetryAggregator>()?;
     m.add_class::<telemetry::PyInstrumentedEngine>()?;
+    // --- Telemetry (new session/phase/ITL/FLOPs classes) ---
+    m.add_class::<telemetry::PyTelemetrySample>()?;
+    m.add_class::<telemetry::PyTelemetrySessionCore>()?;
+    m.add_class::<telemetry::PyItlStats>()?;
+    m.add_class::<telemetry::PyFlopsEstimator>()?;
+    m.add_class::<telemetry::PyPhaseMetrics>()?;
 
     // --- Traces ---
     m.add_class::<traces::PyTraceStore>()?;

@@ -39,6 +39,8 @@ KNOWN_BENCHMARKS = {
     "simpleqa", "wildchat", "ipw",
     "gaia", "frames", "swebench", "swefficiency",
     "terminalbench", "terminalbench-native",
+    "email_triage", "morning_brief", "research_mining",
+    "knowledge_base", "coding_task",
 }
 
 

@@ -24,6 +24,7 @@ class JarvisAgentBackend(InferenceBackend):
         tools: Optional[List[str]] = None,
         telemetry: bool = False,
         gpu_metrics: bool = False,
+        model: Optional[str] = None,
     ) -> None:
         from openjarvis.system import SystemBuilder
 
@@ -35,6 +36,8 @@ class JarvisAgentBackend(InferenceBackend):
         builder = SystemBuilder()
         if engine_key:
             builder.engine(engine_key)
+        if model:
+            builder.model(model)
         builder.agent(agent_name)
         if tools:
             builder.tools(tools)
@@ -94,6 +97,12 @@ class JarvisAgentBackend(InferenceBackend):
             "gpu_utilization_pct": telemetry_data.get("gpu_utilization_pct", 0.0),
             "throughput_tok_per_sec": telemetry_data.get("throughput_tok_per_sec", 0.0),
         }
+
+    def set_task_metadata(self, metadata: dict) -> None:
+        """Forward task environment metadata to the underlying agent."""
+        agent = getattr(self._system, "_agent", None)
+        if agent and hasattr(agent, "set_task_metadata"):
+            agent.set_task_metadata(metadata)
 
     def close(self) -> None:
         self._system.close()

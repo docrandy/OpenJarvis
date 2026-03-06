@@ -84,6 +84,14 @@ class EnergyMonitor(ABC):
         """
         yield EnergySample()  # pragma: no cover
 
+    def snapshot(self) -> EnergySample:
+        """Return an instantaneous energy reading without start/stop bracket.
+
+        Subclasses should override to provide actual readings. Default returns
+        an empty sample.
+        """
+        return EnergySample()
+
     @abstractmethod
     def close(self) -> None:
         """Release any resources (handles, threads, etc.)."""
