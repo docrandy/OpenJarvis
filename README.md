@@ -5,7 +5,7 @@
 
   <p>
     <a href="https://www.intelligence-per-watt.ai/"><img src="https://img.shields.io/badge/project-intelligence--per--watt.ai-blue" alt="Project"></a>
-    <a href="https://hazyresearch.stanford.edu/OpenJarvis/"><img src="https://img.shields.io/badge/docs-mkdocs-blue" alt="Docs"></a>
+    <a href="https://open-jarvis.github.io/OpenJarvis/"><img src="https://img.shields.io/badge/docs-mkdocs-blue" alt="Docs"></a>
     <img src="https://img.shields.io/badge/python-%3E%3D3.10-blue" alt="Python">
     <img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License">
   </p>
@@ -13,7 +13,7 @@
 
 ---
 
-> **[Documentation](https://hazyresearch.stanford.edu/OpenJarvis/)**
+> **[Documentation](https://open-jarvis.github.io/OpenJarvis/)**
 >
 > **[Project Site](https://www.intelligence-per-watt.ai/)**
 
@@ -76,7 +76,7 @@ From source, you need the Rust extension for full functionality (security, tools
 
 ```bash
 # 1. Clone and install Python deps
-git clone https://github.com/HazyResearch/OpenJarvis.git
+git clone https://github.com/open-jarvis/OpenJarvis.git
 cd OpenJarvis
 uv sync --extra dev
 
