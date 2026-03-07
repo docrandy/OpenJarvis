@@ -523,3 +523,33 @@ Trace
 | `GENERATE` | LLM inference call | Engine |
 | `TOOL_CALL` | Tool execution | ToolExecutor |
 | `RESPOND` | Final response | TraceCollector |
+
+---
+
+## Optimization Framework
+
+The optimization subsystem (`learning/optimize/`) provides LLM-guided search
+over OpenJarvis's 5-pillar configuration space. It automates finding optimal
+configurations for accuracy, latency, cost, and energy consumption.
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| `SearchSpace` | Defines tunable dimensions across all 5 pillars |
+| `LLMOptimizer` | Proposes configurations using an LLM backend |
+| `OptimizationEngine` | Orchestrates the propose-evaluate-analyze loop |
+| `OptimizationStore` | SQLite-backed persistence for trials and runs |
+| `TrialRunner` | Evaluates proposed configurations against benchmarks |
+
+### Pareto Frontier
+
+The engine computes a Pareto frontier across multiple objectives
+(accuracy vs latency vs cost), identifying configurations where no single
+metric can be improved without degrading another.
+
+### Rust Backend
+
+The optimization framework has full Rust parity via the `openjarvis-learning`
+crate, with PyO3 bindings exposing `OptimizationStore` and `LLMOptimizer`
+to Python.
