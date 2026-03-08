@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List
 
 from openjarvis.core.registry import ModelRegistry
-from openjarvis.core.types import ModelSpec
+from openjarvis.core.types import ModelSpec, Quantization
 
 BUILTIN_MODELS: List[ModelSpec] = [
     # -----------------------------------------------------------------------
@@ -187,6 +187,134 @@ BUILTIN_MODELS: List[ModelSpec] = [
         metadata={
             "architecture": "moe",
             "hf_repo": "Qwen/Qwen3.5-397B-A17B",
+        },
+    ),
+    # -----------------------------------------------------------------------
+    # Local models — Unsloth GGUF Quantizations
+    # -----------------------------------------------------------------------
+    ModelSpec(
+        model_id="unsloth/Qwen3.5-35B-A3B-GGUF",
+        name="Qwen3.5 35B A3B (Unsloth GGUF)",
+        parameter_count_b=35.0,
+        active_parameter_count_b=3.0,
+        context_length=262144,
+        min_vram_gb=6.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/Qwen3.5-35B-A3B-GGUF",
+            "base_model": "Qwen/Qwen3.5-35B-A3B",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/Qwen3.5-122B-A10B-GGUF",
+        name="Qwen3.5 122B A10B (Unsloth GGUF)",
+        parameter_count_b=122.0,
+        active_parameter_count_b=10.0,
+        context_length=262144,
+        min_vram_gb=16.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/Qwen3.5-122B-A10B-GGUF",
+            "base_model": "Qwen/Qwen3.5-122B-A10B",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/Qwen3.5-397B-A17B-GGUF",
+        name="Qwen3.5 397B A17B (Unsloth GGUF)",
+        parameter_count_b=397.0,
+        active_parameter_count_b=17.0,
+        context_length=262144,
+        min_vram_gb=40.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/Qwen3.5-397B-A17B-GGUF",
+            "base_model": "Qwen/Qwen3.5-397B-A17B",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/GLM-5-GGUF",
+        name="GLM-5 (Unsloth GGUF)",
+        parameter_count_b=100.0,
+        context_length=131072,
+        min_vram_gb=12.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "dense",
+            "hf_repo": "unsloth/GLM-5-GGUF",
+            "base_model": "THUDM/GLM-5",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/GLM-4.7-Flash-GGUF",
+        name="GLM 4.7 Flash (Unsloth GGUF)",
+        parameter_count_b=30.0,
+        active_parameter_count_b=3.0,
+        context_length=131072,
+        min_vram_gb=6.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/GLM-4.7-Flash-GGUF",
+            "base_model": "THUDM/GLM-4.7-Flash-Chat",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/Qwen3-Coder-Next-GGUF",
+        name="Qwen3 Coder Next (Unsloth GGUF)",
+        parameter_count_b=80.0,
+        context_length=131072,
+        min_vram_gb=12.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/Qwen3-Coder-Next-GGUF",
+            "base_model": "Qwen/Qwen3-Coder-Next",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/MiniMax-M2.5-GGUF",
+        name="MiniMax M2.5 (Unsloth GGUF)",
+        parameter_count_b=229.0,
+        context_length=131072,
+        min_vram_gb=30.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/MiniMax-M2.5-GGUF",
+            "base_model": "MiniMax/MiniMax-M2.5",
+        },
+    ),
+    ModelSpec(
+        model_id="unsloth/Kimi-K2.5-GGUF",
+        name="Kimi K2.5 (Unsloth GGUF)",
+        parameter_count_b=1000.0,
+        active_parameter_count_b=32.0,
+        context_length=131072,
+        min_vram_gb=40.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("ollama", "llamacpp"),
+        provider="unsloth",
+        metadata={
+            "architecture": "moe",
+            "hf_repo": "unsloth/Kimi-K2.5-GGUF",
+            "base_model": "moonshotai/Kimi-K2.5",
         },
     ),
     # -----------------------------------------------------------------------
