@@ -318,6 +318,73 @@ BUILTIN_MODELS: List[ModelSpec] = [
         },
     ),
     # -----------------------------------------------------------------------
+    # Local models — LiquidAI LFM2.5 (Hybrid SSM+Transformer)
+    # -----------------------------------------------------------------------
+    ModelSpec(
+        model_id="LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+        name="LFM2.5 1.2B Instruct (GGUF)",
+        parameter_count_b=1.2,
+        context_length=32768,
+        min_vram_gb=1.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("llamacpp", "ollama"),
+        provider="liquidai",
+        metadata={
+            "architecture": "hybrid_ssm_transformer",
+            "hf_repo": "LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+            "layers": "10 LIV convolution + 6 GQA",
+            "languages": 8,
+        },
+    ),
+    ModelSpec(
+        model_id="LiquidAI/LFM2.5-1.2B-Instruct-MLX",
+        name="LFM2.5 1.2B Instruct (MLX)",
+        parameter_count_b=1.2,
+        context_length=32768,
+        min_vram_gb=1.0,
+        supported_engines=("mlx",),
+        provider="liquidai",
+        metadata={
+            "architecture": "hybrid_ssm_transformer",
+            "hf_repo": "LiquidAI/LFM2.5-1.2B-Instruct-MLX",
+            "layers": "10 LIV convolution + 6 GQA",
+            "languages": 8,
+        },
+    ),
+    ModelSpec(
+        model_id="LiquidAI/LFM2.5-1.2B-Thinking-GGUF",
+        name="LFM2.5 1.2B Thinking (GGUF)",
+        parameter_count_b=1.2,
+        context_length=32768,
+        min_vram_gb=1.0,
+        quantization=Quantization.GGUF,
+        supported_engines=("llamacpp", "ollama"),
+        provider="liquidai",
+        metadata={
+            "architecture": "hybrid_ssm_transformer",
+            "hf_repo": "LiquidAI/LFM2.5-1.2B-Thinking-GGUF",
+            "layers": "10 LIV convolution + 6 GQA",
+            "variant": "reasoning-optimized",
+            "languages": 8,
+        },
+    ),
+    ModelSpec(
+        model_id="LiquidAI/LFM2.5-1.2B-Thinking-MLX",
+        name="LFM2.5 1.2B Thinking (MLX)",
+        parameter_count_b=1.2,
+        context_length=32768,
+        min_vram_gb=1.0,
+        supported_engines=("mlx",),
+        provider="liquidai",
+        metadata={
+            "architecture": "hybrid_ssm_transformer",
+            "hf_repo": "LiquidAI/LFM2.5-1.2B-Thinking-MLX",
+            "layers": "10 LIV convolution + 6 GQA",
+            "variant": "reasoning-optimized",
+            "languages": 8,
+        },
+    ),
+    # -----------------------------------------------------------------------
     # Local models — TeichAI Distilled
     # -----------------------------------------------------------------------
     ModelSpec(
