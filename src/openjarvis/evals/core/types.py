@@ -80,6 +80,7 @@ class RunConfig:
     sheets_credentials_path: str = ""
     system_prompt: str = ""
     episode_mode: bool = False
+    dataset_subset: Optional[str] = None
 
 
 @dataclass(slots=True)
@@ -223,6 +224,7 @@ class BenchmarkConfig:
     judge_model: Optional[str] = None
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
+    subset: Optional[str] = None
 
 
 @dataclass(slots=True)

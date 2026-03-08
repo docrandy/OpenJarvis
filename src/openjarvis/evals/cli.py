@@ -138,7 +138,7 @@ def _build_backend(backend_name: str, engine_key: Optional[str],
         )
 
 
-def _build_dataset(benchmark: str):
+def _build_dataset(benchmark: str, subset: str | None = None):
     """Construct the dataset provider for a benchmark."""
     if benchmark == "supergpqa":
         from openjarvis.evals.datasets.supergpqa import SuperGPQADataset
@@ -210,7 +210,7 @@ def _build_dataset(benchmark: str):
         return AMABenchDataset()
     elif benchmark == "lifelong-agent":
         from openjarvis.evals.datasets.lifelong_agent import LifelongAgentDataset
-        return LifelongAgentDataset()
+        return LifelongAgentDataset(subset=subset or "database")
     elif benchmark == "deepplanning":
         from openjarvis.evals.datasets.deepplanning import DeepPlanningDataset
         return DeepPlanningDataset()
@@ -387,7 +387,7 @@ def _run_single(config, console: Optional[Console] = None) -> object:
         gpu_metrics=getattr(config, "gpu_metrics", False),
         model=config.model,
     )
-    dataset = _build_dataset(config.benchmark)
+    dataset = _build_dataset(config.benchmark, getattr(config, "dataset_subset", None))
     judge_backend = _build_judge_backend(config.judge_model)
     scorer = _build_scorer(config.benchmark, judge_backend, config.judge_model)
 
@@ -443,7 +443,7 @@ def _run_agentic(
         console = Console()
 
     # Build dataset
-    dataset = _build_dataset(config.benchmark)
+    dataset = _build_dataset(config.benchmark, getattr(config, "dataset_subset", None))
     dataset.load(
         max_samples=config.max_samples,
         split=config.dataset_split,

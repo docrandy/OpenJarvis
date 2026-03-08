@@ -55,6 +55,16 @@ class OllamaEngine(InferenceEngine):
         tools = kwargs.get("tools")
         if tools:
             payload["tools"] = tools
+
+        # Apply structured output / JSON mode
+        response_format = kwargs.get("response_format")
+        if response_format is not None:
+            from openjarvis.engine._stubs import ResponseFormat
+
+            if isinstance(response_format, ResponseFormat):
+                payload["format"] = "json"
+            elif isinstance(response_format, dict):
+                payload["format"] = "json"
         try:
             resp = self._client.post("/api/chat", json=payload)
             if resp.status_code == 400 and tools:

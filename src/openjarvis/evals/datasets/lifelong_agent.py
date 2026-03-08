@@ -7,6 +7,7 @@ Source: arXiv:2505.11942
 
 from __future__ import annotations
 
+import ast
 import json
 import logging
 import random
@@ -31,6 +32,24 @@ _KG_SYSTEM = (
 )
 
 
+def _parse_list_field(value: object) -> list:
+    """Parse a field that may be a Python-repr string, JSON, or already a list."""
+    if isinstance(value, list):
+        return value
+    if not isinstance(value, str):
+        return [value] if value is not None else []
+    try:
+        result = json.loads(value)
+        return result if isinstance(result, list) else [result]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    try:
+        result = ast.literal_eval(value)
+        return result if isinstance(result, list) else [result]
+    except (ValueError, SyntaxError):
+        return [value]
+
+
 class LifelongAgentDataset(DatasetProvider):
     """LifelongAgentBench sequential task learning benchmark."""
 
@@ -49,6 +68,29 @@ class LifelongAgentDataset(DatasetProvider):
         )
         self._records: List[EvalRecord] = []
         self._episodes: List[List[EvalRecord]] = []
+        self._mid_names: Optional[Dict[str, str]] = None
+
+    def _load_mid_cache(self) -> Dict[str, str]:
+        """Lazily load Freebase MID-to-name mapping from mid_to_name.json."""
+        if self._mid_names is not None:
+            return self._mid_names
+        cache_path = (
+            self._cache_dir / "database" / "knowledge_graph" / "mid_to_name.json"
+        )
+        if cache_path.exists():
+            with open(cache_path) as f:
+                self._mid_names = json.load(f)
+            logger.info(
+                "Loaded %d MID mappings from %s",
+                len(self._mid_names), cache_path,
+            )
+        else:
+            logger.warning(
+                "No MID cache at %s — run scripts/resolve_freebase_mids.py",
+                cache_path,
+            )
+            self._mid_names = {}
+        return self._mid_names
 
     def load(
         self,
@@ -161,17 +203,11 @@ class LifelongAgentDataset(DatasetProvider):
             )
             entity_desc = f"Entities:\n{entities}"
 
-        action_list = row.get("action_list", [])
+        action_list = _parse_list_field(row.get("action_list", []))
         action_desc = ""
         if action_list:
-            if isinstance(action_list, str):
-                try:
-                    action_list = json.loads(action_list)
-                except (json.JSONDecodeError, TypeError):
-                    action_list = []
-            if isinstance(action_list, list) and action_list:
-                steps = "\n".join(f"  {i+1}. {a}" for i, a in enumerate(action_list))
-                action_desc = f"\n\nKG Operations:\n{steps}"
+            steps = "\n".join(f"  {i+1}. {a}" for i, a in enumerate(action_list))
+            action_desc = f"\n\nKG Operations:\n{steps}"
 
         s_expr = row.get("s_expression", "")
         s_expr_desc = ""
@@ -186,13 +222,18 @@ class LifelongAgentDataset(DatasetProvider):
             f"Question: {question}"
         )
 
-        answer_list = row.get("answer_list", [])
-        if isinstance(answer_list, str):
-            try:
-                answer_list = json.loads(answer_list)
-            except (json.JSONDecodeError, TypeError):
-                answer_list = [answer_list]
-        reference = ", ".join(str(a) for a in answer_list) if answer_list else ""
+        answer_list = _parse_list_field(row.get("answer_list", []))
+
+        if answer_list:
+            mid_names = self._load_mid_cache()
+            resolved = []
+            for a in answer_list:
+                a_str = str(a)
+                name = mid_names.get(a_str)
+                resolved.append(name if name else a_str)
+            reference = ", ".join(resolved)
+        else:
+            reference = ""
 
         return EvalRecord(
             record_id=f"lifelong-kg-{qid}",
@@ -205,6 +246,8 @@ class LifelongAgentDataset(DatasetProvider):
                 "qid": qid,
                 "action_list": action_list,
                 "skill_list": row.get("skill_list", []),
+                "entity_dict": entity_dict,
+                "s_expression": row.get("s_expression", ""),
             },
         )
 

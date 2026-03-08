@@ -21,6 +21,15 @@ fn now_secs() -> f64 {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionCheckpoint {
+    pub checkpoint_id: String,
+    pub session_id: String,
+    pub label: String,
+    pub message_count: usize,
+    pub created_at: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionIdentity {
     pub user_id: String,
     pub display_name: String,
@@ -96,7 +105,17 @@ impl SessionStore {
             CREATE INDEX IF NOT EXISTS idx_messages_session
                 ON session_messages(session_id);
             CREATE INDEX IF NOT EXISTS idx_sessions_activity
-                ON sessions(last_activity);",
+                ON sessions(last_activity);
+            CREATE TABLE IF NOT EXISTS session_checkpoints (
+                checkpoint_id TEXT PRIMARY KEY,
+                session_id    TEXT NOT NULL,
+                label         TEXT NOT NULL,
+                message_count INTEGER NOT NULL,
+                created_at    REAL NOT NULL,
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_session
+                ON session_checkpoints(session_id);",
         )
         .expect("failed to initialise session tables");
 
@@ -295,6 +314,102 @@ impl SessionStore {
         ids.iter().map(|sid| self.load_session(sid)).collect()
     }
 
+    /// Create a checkpoint at the current message position.
+    pub fn checkpoint(&self, session_id: &str, label: &str) -> SessionCheckpoint {
+        let message_count: i64 = self
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM session_messages WHERE session_id = ?1",
+                params![session_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        let checkpoint_id = uuid::Uuid::new_v4().to_string();
+        let now = now_secs();
+
+        self.conn
+            .execute(
+                "INSERT INTO session_checkpoints (checkpoint_id, session_id, label, message_count, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![checkpoint_id, session_id, label, message_count, now],
+            )
+            .expect("insert checkpoint");
+
+        SessionCheckpoint {
+            checkpoint_id,
+            session_id: session_id.to_string(),
+            label: label.to_string(),
+            message_count: message_count as usize,
+            created_at: now,
+        }
+    }
+
+    /// Rewind a session to a checkpoint, deleting all messages after the checkpoint position.
+    /// Also removes any checkpoints created after this one.
+    pub fn rewind(&self, session_id: &str, checkpoint_id: &str) -> Result<usize, String> {
+        let (msg_count, cp_created_at): (i64, f64) = self
+            .conn
+            .query_row(
+                "SELECT message_count, created_at FROM session_checkpoints
+                 WHERE checkpoint_id = ?1 AND session_id = ?2",
+                params![checkpoint_id, session_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(|e| format!("Checkpoint not found: {}", e))?;
+
+        let deleted: usize = self
+            .conn
+            .execute(
+                "DELETE FROM session_messages
+                 WHERE session_id = ?1
+                   AND id NOT IN (
+                       SELECT id FROM session_messages
+                       WHERE session_id = ?1
+                       ORDER BY timestamp ASC, id ASC
+                       LIMIT ?2
+                   )",
+                params![session_id, msg_count],
+            )
+            .map_err(|e| e.to_string())?;
+
+        self.conn
+            .execute(
+                "DELETE FROM session_checkpoints
+                 WHERE session_id = ?1 AND created_at > ?2",
+                params![session_id, cp_created_at],
+            )
+            .map_err(|e| e.to_string())?;
+
+        Ok(deleted)
+    }
+
+    /// List all checkpoints for a session, ordered by creation time.
+    pub fn list_checkpoints(&self, session_id: &str) -> Vec<SessionCheckpoint> {
+        let mut stmt = self
+            .conn
+            .prepare(
+                "SELECT checkpoint_id, session_id, label, message_count, created_at
+                 FROM session_checkpoints
+                 WHERE session_id = ?1
+                 ORDER BY created_at ASC",
+            )
+            .expect("prepare checkpoint query");
+
+        stmt.query_map(params![session_id], |row| {
+            Ok(SessionCheckpoint {
+                checkpoint_id: row.get(0)?,
+                session_id: row.get(1)?,
+                label: row.get(2)?,
+                message_count: row.get::<_, i64>(3)? as usize,
+                created_at: row.get(4)?,
+            })
+        })
+        .expect("query checkpoints")
+        .filter_map(|r| r.ok())
+        .collect()
+    }
+
     /// Close the database connection (consumes self).
     pub fn close(self) {
         let _ = self.conn.close();
@@ -304,7 +419,7 @@ impl SessionStore {
     // Internal helpers
     // ------------------------------------------------------------------
 
-    fn load_session(&self, session_id: &str) -> Session {
+    pub fn load_session(&self, session_id: &str) -> Session {
         let (user_id, display_name, created_at, last_activity, metadata_json): (
             String,
             String,
@@ -510,5 +625,109 @@ mod tests {
 
         let limited = store.list_sessions(false, 1);
         assert_eq!(limited.len(), 1);
+    }
+
+    #[test]
+    fn test_checkpoint_creates_marker() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        store
+            .save_message(&s.session_id, "user", "msg1", "slack")
+            .unwrap();
+        store
+            .save_message(&s.session_id, "assistant", "reply1", "slack")
+            .unwrap();
+
+        let cp = store.checkpoint(&s.session_id, "before-edit");
+        assert_eq!(cp.label, "before-edit");
+        assert_eq!(cp.message_count, 2);
+        assert!(!cp.checkpoint_id.is_empty());
+    }
+
+    #[test]
+    fn test_list_checkpoints() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        store
+            .save_message(&s.session_id, "user", "msg1", "slack")
+            .unwrap();
+        store.checkpoint(&s.session_id, "cp1");
+        store
+            .save_message(&s.session_id, "user", "msg2", "slack")
+            .unwrap();
+        store.checkpoint(&s.session_id, "cp2");
+
+        let cps = store.list_checkpoints(&s.session_id);
+        assert_eq!(cps.len(), 2);
+        assert_eq!(cps[0].label, "cp1");
+        assert_eq!(cps[1].label, "cp2");
+        assert_eq!(cps[0].message_count, 1);
+        assert_eq!(cps[1].message_count, 2);
+    }
+
+    #[test]
+    fn test_rewind_removes_messages_after_checkpoint() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        store
+            .save_message(&s.session_id, "user", "msg1", "slack")
+            .unwrap();
+        store
+            .save_message(&s.session_id, "assistant", "reply1", "slack")
+            .unwrap();
+        let cp = store.checkpoint(&s.session_id, "mid-convo");
+        store
+            .save_message(&s.session_id, "user", "msg2", "slack")
+            .unwrap();
+        store
+            .save_message(&s.session_id, "assistant", "reply2", "slack")
+            .unwrap();
+
+        let reloaded = store.load_session(&s.session_id);
+        assert_eq!(reloaded.messages.len(), 4);
+
+        let deleted = store.rewind(&s.session_id, &cp.checkpoint_id).unwrap();
+        assert_eq!(deleted, 2);
+
+        let after = store.load_session(&s.session_id);
+        assert_eq!(after.messages.len(), 2);
+        assert_eq!(after.messages[0].content, "msg1");
+        assert_eq!(after.messages[1].content, "reply1");
+    }
+
+    #[test]
+    fn test_rewind_removes_later_checkpoints() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        store
+            .save_message(&s.session_id, "user", "msg1", "slack")
+            .unwrap();
+        let cp1 = store.checkpoint(&s.session_id, "cp1");
+        store
+            .save_message(&s.session_id, "user", "msg2", "slack")
+            .unwrap();
+        store.checkpoint(&s.session_id, "cp2");
+
+        store.rewind(&s.session_id, &cp1.checkpoint_id).unwrap();
+
+        let cps = store.list_checkpoints(&s.session_id);
+        assert_eq!(cps.len(), 1);
+        assert_eq!(cps[0].label, "cp1");
+    }
+
+    #[test]
+    fn test_rewind_invalid_checkpoint() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        let result = store.rewind(&s.session_id, "nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_checkpoint_empty_session() {
+        let store = mem_store();
+        let s = store.get_or_create("u1", "slack", "S001", "Alice");
+        let cp = store.checkpoint(&s.session_id, "empty");
+        assert_eq!(cp.message_count, 0);
     }
 }

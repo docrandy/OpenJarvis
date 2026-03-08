@@ -174,6 +174,8 @@ class CloudEngine(InferenceEngine):
                 "OPENAI_API_KEY and install "
                 "openjarvis[inference-cloud]"
             )
+        # Extract response_format before spreading kwargs into create_kwargs
+        response_format = kwargs.pop("response_format", None)
         create_kwargs: Dict[str, Any] = {
             "model": model,
             "messages": messages_to_dicts(messages),
@@ -182,6 +184,26 @@ class CloudEngine(InferenceEngine):
         }
         if not _is_openai_reasoning_model(model):
             create_kwargs["temperature"] = temperature
+
+        # Apply structured output / JSON mode
+        if response_format is not None:
+            from openjarvis.engine._stubs import ResponseFormat
+
+            if isinstance(response_format, ResponseFormat):
+                if response_format.type == "json_schema" and response_format.schema:
+                    create_kwargs["response_format"] = {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "response",
+                            "schema": response_format.schema,
+                        },
+                    }
+                else:
+                    create_kwargs["response_format"] = {"type": "json_object"}
+            else:
+                # Raw dict pass-through for backward compatibility
+                create_kwargs["response_format"] = response_format
+
         t0 = time.monotonic()
         resp = self._openai_client.chat.completions.create(**create_kwargs)
         elapsed = time.monotonic() - t0
@@ -293,6 +315,26 @@ class CloudEngine(InferenceEngine):
         raw_tools = kwargs.pop("tools", None)
         if raw_tools:
             create_kwargs["tools"] = _convert_tools_to_anthropic(raw_tools)
+
+        # Apply structured output via Anthropic's tool_choice pattern
+        response_format = kwargs.pop("response_format", None)
+        if response_format is not None:
+            from openjarvis.engine._stubs import ResponseFormat
+
+            if isinstance(response_format, ResponseFormat):
+                json_tool = {
+                    "name": "json_output",
+                    "description": "Output structured JSON response",
+                    "input_schema": response_format.schema or {"type": "object"},
+                }
+                if "tools" not in create_kwargs:
+                    create_kwargs["tools"] = [json_tool]
+                else:
+                    create_kwargs["tools"].append(json_tool)
+                create_kwargs["tool_choice"] = {
+                    "type": "tool",
+                    "name": "json_output",
+                }
 
         t0 = time.monotonic()
         resp = self._anthropic_client.messages.create(**create_kwargs)
@@ -413,6 +455,16 @@ class CloudEngine(InferenceEngine):
         if raw_tools:
             declarations = _convert_tools_to_google(raw_tools)
             config.tools = [{"function_declarations": declarations}]
+
+        # Apply structured output / JSON mode for Google
+        response_format = kwargs.pop("response_format", None)
+        if response_format is not None:
+            from openjarvis.engine._stubs import ResponseFormat
+
+            if isinstance(response_format, ResponseFormat):
+                config.response_mime_type = "application/json"
+                if response_format.schema:
+                    config.response_schema = response_format.schema
 
         t0 = time.monotonic()
         resp = self._google_client.models.generate_content(

@@ -43,6 +43,11 @@ except ImportError:
     pass
 
 try:
+    import openjarvis.tools.code_interpreter_docker  # noqa: F401
+except ImportError:
+    pass
+
+try:
     import openjarvis.tools.repl  # noqa: F401
 except ImportError:
     pass

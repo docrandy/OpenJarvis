@@ -5,6 +5,46 @@ description: Get up and running with OpenJarvis in minutes
 
 # Quick Start
 
+## What You Can Build
+
+OpenJarvis is a modular AI assistant framework. Here's what developers build with it:
+
+=== "Chat with Any Model"
+
+    ```bash
+    jarvis ask "Explain quantum entanglement" -m qwen3:8b
+    ```
+
+=== "Agent + Tools"
+
+    ```bash
+    jarvis ask --agent orchestrator --tools calculator,web_search "What is the GDP of France in USD?"
+    ```
+
+=== "Index Docs & Ask"
+
+    ```bash
+    jarvis memory index ./docs/
+    jarvis ask "How do I configure the engine?"
+    ```
+
+=== "5-Line Python SDK"
+
+    ```python
+    from openjarvis import Jarvis
+    with Jarvis() as j:
+        print(j.ask("Hello!"))
+    ```
+
+=== "API Server"
+
+    ```bash
+    jarvis serve --port 8000
+    # Now use any OpenAI-compatible client
+    ```
+
+For complete copy-paste patterns, see [Code Snippets](snippets.md).
+
 This guide walks through the core workflows of OpenJarvis: the browser app, CLI, Python SDK, agents with tools, memory, benchmarks, and the API server.
 
 !!! info "Prerequisites"

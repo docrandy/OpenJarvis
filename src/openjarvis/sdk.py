@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -125,6 +126,17 @@ class Jarvis:
         with Jarvis() as j:
             response = j.ask("Hello, what can you do?")
             print(response)
+
+        # Streaming:
+        import asyncio
+
+        async def main():
+            j = Jarvis()
+            async for token in j.ask_stream("Tell me a joke"):
+                print(token, end="", flush=True)
+            j.close()
+
+        asyncio.run(main())
 
         # Or without context manager:
         j = Jarvis()
@@ -331,6 +343,98 @@ class Jarvis:
         return {
             "content": result.get("content", ""),
             "usage": result.get("usage", {}),
+            "model": model_name,
+            "engine": self._resolved_engine_key,
+        }
+
+    async def ask_stream(
+        self,
+        query: str,
+        *,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        context: bool = True,
+    ) -> AsyncIterator[str]:
+        """Stream tokens as they are generated. Yields token strings."""
+        self._ensure_engine()
+        if temperature is None:
+            temperature = self._config.intelligence.temperature
+        if max_tokens is None:
+            max_tokens = self._config.intelligence.max_tokens
+
+        model_name = model or self._model_override
+
+        if model_name is None:
+            model_name = self._resolve_model(query)
+
+        if not model_name:
+            models = self._engine.list_models()
+            model_name = models[0] if models else "default"
+
+        messages = [Message(role=Role.USER, content=query)]
+
+        if context and self._config.agent.context_from_memory:
+            messages = self._inject_context(query, messages)
+
+        async for token in self._engine.stream(
+            messages,
+            model=model_name,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ):
+            yield token
+
+    async def ask_full_stream(
+        self,
+        query: str,
+        *,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        context: bool = True,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """Stream token dicts with metadata.
+
+        Yields dicts with ``token`` and ``index`` keys for each token.
+        The final dict has ``done: True`` along with the full concatenated
+        ``content``, ``model``, and ``engine`` keys.
+        """
+        self._ensure_engine()
+        if temperature is None:
+            temperature = self._config.intelligence.temperature
+        if max_tokens is None:
+            max_tokens = self._config.intelligence.max_tokens
+
+        model_name = model or self._model_override
+
+        if model_name is None:
+            model_name = self._resolve_model(query)
+
+        if not model_name:
+            models = self._engine.list_models()
+            model_name = models[0] if models else "default"
+
+        messages = [Message(role=Role.USER, content=query)]
+
+        if context and self._config.agent.context_from_memory:
+            messages = self._inject_context(query, messages)
+
+        parts: List[str] = []
+        i = 0
+        async for token in self._engine.stream(
+            messages,
+            model=model_name,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ):
+            parts.append(token)
+            yield {"token": token, "index": i}
+            i += 1
+
+        yield {
+            "done": True,
+            "content": "".join(parts),
             "model": model_name,
             "engine": self._resolved_engine_key,
         }

@@ -132,6 +132,7 @@ nav:
   - Getting Started:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quickstart.md
+      - Code Snippets: getting-started/snippets.md
       - Configuration: getting-started/configuration.md
   - Tutorials:
       - Overview: tutorials/index.md
