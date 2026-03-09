@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -14,6 +15,8 @@ from openjarvis.engine._discovery import get_engine
 from openjarvis.system import JarvisSystem, SystemBuilder
 from openjarvis.telemetry.instrumented_engine import InstrumentedEngine
 from openjarvis.telemetry.store import TelemetryStore
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryHandle:
@@ -174,8 +177,8 @@ class Jarvis:
             try:
                 self._telem_store = TelemetryStore(self._config.telemetry.db_path)
                 self._telem_store.subscribe_to_bus(self._bus)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to initialize telemetry store: %s", exc)
 
         # Set up security audit logger
         if self._config.security.enabled:
@@ -186,8 +189,8 @@ class Jarvis:
                     db_path=self._config.security.audit_log_path,
                     bus=self._bus,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to initialize security audit logger: %s", exc)
 
     @property
     def config(self) -> JarvisConfig:
@@ -242,8 +245,8 @@ class Jarvis:
                         scan_output=self._config.security.scan_output,
                         bus=self._bus,
                     )
-            except Exception:
-                pass  # security is best-effort
+            except Exception as exc:
+                logger.debug("Failed to set up security guardrails: %s", exc)
 
         # Wrap engine with InstrumentedEngine for telemetry + energy
         energy_monitor = None
@@ -254,8 +257,8 @@ class Jarvis:
                 energy_monitor = create_energy_monitor(
                     prefer_vendor=self._config.telemetry.energy_vendor or None,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to create energy monitor: %s", exc)
         self._energy_monitor = energy_monitor
         self._engine = InstrumentedEngine(
             engine, self._bus, energy_monitor=energy_monitor,
@@ -448,8 +451,8 @@ class Jarvis:
             models = self._engine.list_models()
             if models:
                 return models[0]
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to list models from engine: %s", exc)
         return self._config.intelligence.fallback_model or None
 
     def _run_agent(
@@ -519,8 +522,8 @@ class Jarvis:
                     )
                     for msg in context_messages:
                         ctx.conversation.add(msg)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to inject memory context for agent: %s", exc)
 
         result = agent_obj.run(query, context=ctx)
         return {
@@ -555,8 +558,8 @@ class Jarvis:
                     max_context_tokens=self._config.memory.context_max_tokens,
                 )
                 return inject_context(query, messages, backend, config=ctx_cfg)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to inject memory context: %s", exc)
         return messages
 
     def list_models(self) -> List[str]:
@@ -576,20 +579,20 @@ class Jarvis:
         if self._energy_monitor is not None:
             try:
                 self._energy_monitor.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Error closing energy monitor: %s", exc)
             self._energy_monitor = None
         if self._telem_store is not None:
             try:
                 self._telem_store.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Error closing telemetry store: %s", exc)
             self._telem_store = None
         if self._audit_logger is not None:
             try:
                 self._audit_logger.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Error closing audit logger: %s", exc)
             self._audit_logger = None
         self._engine = None
 
