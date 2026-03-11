@@ -804,6 +804,17 @@ def include_all_routes(app) -> None:
     app.include_router(feedback_router)
     app.include_router(optimize_router)
 
+    # Agent Manager routes (if available)
+    try:
+        if hasattr(app.state, "agent_manager") and app.state.agent_manager:
+            from openjarvis.server.agent_manager_routes import (  # noqa: PLC0415
+                create_agent_manager_router,
+            )
+            am_router = create_agent_manager_router(app.state.agent_manager)
+            app.include_router(am_router)
+    except ImportError:
+        pass
+
 
 __all__ = [
     "include_all_routes",

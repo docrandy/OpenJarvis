@@ -9,6 +9,7 @@ import type {
   ToolCallInfo,
   TokenUsage,
 } from '../types';
+import type { ManagedAgent } from './api';
 
 // ── localStorage persistence ──────────────────────────────────────────
 
@@ -146,6 +147,16 @@ interface AppState {
   setSidebarOpen: (open: boolean) => void;
   toggleSystemPanel: () => void;
   setSystemPanelOpen: (open: boolean) => void;
+
+  // Agents
+  managedAgents: ManagedAgent[];
+  managedAgentsLoading: boolean;
+  selectedAgentId: string | null;
+
+  // Actions: agents
+  setManagedAgents: (agents: ManagedAgent[]) => void;
+  setManagedAgentsLoading: (loading: boolean) => void;
+  setSelectedAgentId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => {
@@ -323,6 +334,16 @@ export const useAppStore = create<AppState>((set, get) => {
     setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
     toggleSystemPanel: () => set((s) => ({ systemPanelOpen: !s.systemPanelOpen })),
     setSystemPanelOpen: (open: boolean) => set({ systemPanelOpen: open }),
+
+    // ── Agents ─────────────────────────────────────────────────────
+
+    managedAgents: [],
+    managedAgentsLoading: false,
+    selectedAgentId: null,
+
+    setManagedAgents: (agents) => set({ managedAgents: agents }),
+    setManagedAgentsLoading: (loading) => set({ managedAgentsLoading: loading }),
+    setSelectedAgentId: (id) => set({ selectedAgentId: id }),
   };
 });
 

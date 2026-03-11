@@ -1086,7 +1086,7 @@ def load_config(path: Optional[Path] = None) -> JarvisConfig:
             "server", "telemetry", "traces", "security",
             "channel", "tools", "sandbox", "scheduler",
             "workflow", "sessions", "a2a", "operators",
-            "speech", "optimize",
+            "speech", "optimize", "agent_manager",
         )
         for section_name in top_sections:
             if section_name in data:
