@@ -126,3 +126,38 @@ export async function sendAgentMessage(
     body: JSON.stringify({ content, mode }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Agent Learning + Traces
+// ---------------------------------------------------------------------------
+
+export interface LearningLogEntry {
+  id: string;
+  agent_id: string;
+  event_type: string;
+  description: string;
+  data: Record<string, unknown>;
+  created_at: number;
+}
+
+export interface AgentTrace {
+  id: string;
+  outcome: string;
+  duration: number;
+  started_at: number;
+  steps: number;
+}
+
+export async function fetchLearningLog(apiUrl: string, agentId: string): Promise<LearningLogEntry[]> {
+  const data = await request<{ learning_log: LearningLogEntry[] }>(apiUrl, `/v1/managed-agents/${agentId}/learning`);
+  return data.learning_log || [];
+}
+
+export async function triggerLearning(apiUrl: string, agentId: string): Promise<void> {
+  await fetch(`${apiUrl}/v1/managed-agents/${agentId}/learning/run`, { method: 'POST' });
+}
+
+export async function fetchAgentTraces(apiUrl: string, agentId: string, limit = 20): Promise<AgentTrace[]> {
+  const data = await request<{ traces: AgentTrace[] }>(apiUrl, `/v1/managed-agents/${agentId}/traces?limit=${limit}`);
+  return data.traces || [];
+}
