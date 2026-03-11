@@ -98,6 +98,7 @@ class AgentManager:
             "ALTER TABLE managed_agents ADD COLUMN total_runs INTEGER DEFAULT 0",
             "ALTER TABLE managed_agents ADD COLUMN last_run_at REAL",
             "ALTER TABLE managed_agents ADD COLUMN last_activity_at REAL",
+            "ALTER TABLE managed_agents ADD COLUMN stall_retries INTEGER DEFAULT 0",
         ]
         for migration in _MIGRATIONS:
             try:
@@ -160,6 +161,20 @@ class AgentManager:
             vals.append(total_runs_increment)
             sets.append("last_run_at = ?")
             vals.append(time.time())
+        total_cost_increment = kwargs.get("total_cost_increment", 0)
+        if total_cost_increment:
+            sets.append("total_cost = total_cost + ?")
+            vals.append(total_cost_increment)
+        total_tokens_increment = kwargs.get("total_tokens_increment", 0)
+        if total_tokens_increment:
+            sets.append("total_tokens = total_tokens + ?")
+            vals.append(total_tokens_increment)
+        if "last_activity_at" in kwargs:
+            sets.append("last_activity_at = ?")
+            vals.append(kwargs["last_activity_at"])
+        if "stall_retries" in kwargs:
+            sets.append("stall_retries = ?")
+            vals.append(kwargs["stall_retries"])
         sets.append("updated_at = ?")
         vals.append(time.time())
         vals.append(agent_id)
@@ -544,6 +559,7 @@ class AgentManager:
             "total_runs": row["total_runs"] or 0,
             "last_run_at": row["last_run_at"],
             "last_activity_at": row["last_activity_at"],
+            "stall_retries": row["stall_retries"] or 0,
         }
 
     @staticmethod
