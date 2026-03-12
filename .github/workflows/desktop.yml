@@ -132,7 +132,13 @@ jobs:
       - name: Download Ollama sidecar
         shell: bash
         run: |
-          cd desktop/scripts && chmod +x download-ollama.sh && ./download-ollama.sh
+          cd desktop/scripts && chmod +x download-ollama.sh
+          if [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            ./download-ollama.sh aarch64-apple-darwin
+            ./download-ollama.sh x86_64-apple-darwin
+          else
+            ./download-ollama.sh
+          fi
 
       - name: Determine release info
         id: release-info
