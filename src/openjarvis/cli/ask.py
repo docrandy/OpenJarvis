@@ -49,12 +49,6 @@ def _get_memory_backend(config):
         else:
             backend = MemoryRegistry.create(key)
 
-        # Check if there's actually anything indexed
-        if hasattr(backend, "count") and backend.count() == 0:
-            if hasattr(backend, "close"):
-                backend.close()
-            return None
-
         return backend
     except Exception as exc:
         logger.debug("Memory backend unavailable (optional): %s", exc)
@@ -74,7 +68,7 @@ def _build_tools(tool_names: list[str], config, engine, model_name: str):
             continue
         tool_cls = ToolRegistry.get(name)
         # Instantiate with appropriate arguments
-        if name == "retrieval":
+        if name in ("retrieval", "memory_store", "memory_search", "memory_index", "memory_retrieve"):
             backend = _get_memory_backend(config)
             tools.append(tool_cls(backend=backend))
         elif name == "llm":
