@@ -582,6 +582,26 @@ class LearningConfig:
 
 
 @dataclass(slots=True)
+class MemoryFilesConfig:
+    """Paths to optional personality/memory/user markdown files."""
+
+    soul_path: str = str(DEFAULT_CONFIG_DIR / "SOUL.md")
+    memory_path: str = str(DEFAULT_CONFIG_DIR / "MEMORY.md")
+    user_path: str = str(DEFAULT_CONFIG_DIR / "USER.md")
+
+
+@dataclass(slots=True)
+class SystemPromptConfig:
+    """Limits and strategy for system-prompt assembly."""
+
+    soul_max_chars: int = 4096
+    memory_max_chars: int = 4096
+    user_max_chars: int = 2048
+    skill_desc_max_chars: int = 120
+    truncation_strategy: str = "head_tail"
+
+
+@dataclass(slots=True)
 class StorageConfig:
     """Storage (memory) backend settings."""
 
