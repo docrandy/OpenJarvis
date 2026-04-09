@@ -12,6 +12,7 @@ See spec §4 for the data model rationale.
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -189,4 +190,46 @@ class FailureCluster(BaseModel):
     addressed_by_edit_ids: list[str] = Field(
         default_factory=list,
         description="Ids of edits in the LearningPlan that target this cluster.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# LearningPlan — frozen output of the planning phase
+# ---------------------------------------------------------------------------
+
+
+class LearningPlan(BaseModel):
+    """The teacher's frozen plan of edits for a learning session.
+
+    Once written to ``<session_dir>/plan.json`` this is immutable. The
+    execution layer reads this file and does not re-prompt the teacher.
+
+    See spec §4.2 and §6.
+    """
+
+    session_id: str = Field(..., description="Owning session id.")
+    diagnosis_summary: str = Field(
+        ...,
+        description="Markdown narrative analysis from the teacher (~500-2000 words).",
+    )
+    failure_clusters: list[FailureCluster] = Field(
+        default_factory=list,
+        description="Clusters identified in phase 1.",
+    )
+    edits: list[Edit] = Field(
+        default_factory=list,
+        description="Typed edit list emitted by the planner.",
+    )
+    teacher_model: str = Field(
+        ...,
+        description="Frontier model id used as the teacher (e.g. 'claude-opus-4-6').",
+    )
+    estimated_cost_usd: float = Field(
+        ...,
+        ge=0.0,
+        description="Total teacher API cost estimate for this session.",
+    )
+    created_at: datetime = Field(
+        ...,
+        description="When the plan was finalized.",
     )

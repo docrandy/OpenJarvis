@@ -268,3 +268,97 @@ class TestFailureCluster:
 
         with pytest.raises(ValidationError):
             FailureCluster(**kwargs)
+
+
+# ---------------------------------------------------------------------------
+# LearningPlan
+# ---------------------------------------------------------------------------
+
+
+class TestLearningPlan:
+    """Tests for LearningPlan pydantic model."""
+
+    def _valid_plan_kwargs(self) -> dict:
+        from datetime import datetime, timezone
+
+        from openjarvis.learning.distillation.models import (
+            Edit,
+            EditOp,
+            EditPillar,
+            EditRiskTier,
+            FailureCluster,
+        )
+
+        cluster = FailureCluster(
+            id="cluster-001",
+            description="Math routed to qwen-3b",
+            sample_trace_ids=["t1", "t2", "t3"],
+            student_failure_rate=0.8,
+            teacher_success_rate=0.9,
+            skill_gap="needs CoT",
+            addressed_by_edit_ids=["edit-001"],
+        )
+        edit = Edit(
+            id="edit-001",
+            pillar=EditPillar.INTELLIGENCE,
+            op=EditOp.SET_MODEL_FOR_QUERY_CLASS,
+            target="learning.routing.policy_map.math",
+            payload={"query_class": "math", "model": "qwen2.5-coder:14b"},
+            rationale="Math fails on small model",
+            expected_improvement="cluster-001",
+            risk_tier=EditRiskTier.AUTO,
+            references=["t1"],
+        )
+        return {
+            "session_id": "session-001",
+            "diagnosis_summary": "## Diagnosis\nThe student misroutes math.",
+            "failure_clusters": [cluster],
+            "edits": [edit],
+            "teacher_model": "claude-opus-4-6",
+            "estimated_cost_usd": 1.42,
+            "created_at": datetime(2026, 4, 8, 14, 22, 1, tzinfo=timezone.utc),
+        }
+
+    def test_constructs_with_valid_fields(self) -> None:
+        from openjarvis.learning.distillation.models import LearningPlan
+
+        plan = LearningPlan(**self._valid_plan_kwargs())
+
+        assert plan.session_id == "session-001"
+        assert len(plan.failure_clusters) == 1
+        assert len(plan.edits) == 1
+        assert plan.teacher_model == "claude-opus-4-6"
+        assert plan.estimated_cost_usd == 1.42
+
+    def test_round_trip_via_json(self) -> None:
+        from openjarvis.learning.distillation.models import LearningPlan
+
+        plan = LearningPlan(**self._valid_plan_kwargs())
+        as_json = plan.model_dump_json()
+        restored = LearningPlan.model_validate_json(as_json)
+
+        assert restored == plan
+
+    def test_empty_clusters_and_edits_allowed(self) -> None:
+        # An aborted session may produce a plan with no clusters and no edits.
+        from openjarvis.learning.distillation.models import LearningPlan
+
+        kwargs = self._valid_plan_kwargs()
+        kwargs["failure_clusters"] = []
+        kwargs["edits"] = []
+
+        plan = LearningPlan(**kwargs)
+        assert plan.failure_clusters == []
+        assert plan.edits == []
+
+    def test_estimated_cost_must_be_non_negative(self) -> None:
+        import pytest
+        from pydantic import ValidationError
+
+        from openjarvis.learning.distillation.models import LearningPlan
+
+        kwargs = self._valid_plan_kwargs()
+        kwargs["estimated_cost_usd"] = -1.0
+
+        with pytest.raises(ValidationError):
+            LearningPlan(**kwargs)
