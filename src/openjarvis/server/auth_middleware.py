@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Validates ``Authorization: Bearer <key>`` on ``/v1/*`` routes.
+    """Validates ``Authorization: Bearer <key>`` on ``/v1/*`` and ``/api/*`` routes.
 
     Webhook routes and health checks are exempt — they use
     per-channel signature verification instead.
@@ -44,7 +44,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
     def _requires_auth(path: str) -> bool:
         """Only protect API routes, not the frontend UI or static assets."""
         return path.startswith("/v1/") or path.startswith("/api/")
-
 
 
 def generate_api_key() -> str:
