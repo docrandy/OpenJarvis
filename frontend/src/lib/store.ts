@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import type {
   Conversation,
   ChatMessage,
@@ -10,8 +10,8 @@ import type {
   StreamState,
   ToolCallInfo,
   TokenUsage,
-} from '../types';
-import type { ManagedAgent } from './api';
+} from "../types";
+import type { ManagedAgent } from "./api";
 
 export interface AgentEvent {
   type: string;
@@ -21,13 +21,13 @@ export interface AgentEvent {
 
 // ── localStorage persistence ──────────────────────────────────────────
 
-const CONVERSATIONS_KEY = 'openjarvis-conversations';
-const SETTINGS_KEY = 'openjarvis-settings';
-const OPTIN_KEY = 'openjarvis-optin';
-const OPTIN_NAME_KEY = 'openjarvis-display-name';
-const OPTIN_EMAIL_KEY = 'openjarvis-email';
-const OPTIN_ANONID_KEY = 'openjarvis-anon-id';
-const OPTIN_SEEN_KEY = 'openjarvis-optin-seen';
+const CONVERSATIONS_KEY = "openjarvis-conversations";
+const SETTINGS_KEY = "openjarvis-settings";
+const OPTIN_KEY = "openjarvis-optin";
+const OPTIN_NAME_KEY = "openjarvis-display-name";
+const OPTIN_EMAIL_KEY = "openjarvis-email";
+const OPTIN_ANONID_KEY = "openjarvis-anon-id";
+const OPTIN_SEEN_KEY = "openjarvis-optin-seen";
 
 interface ConversationStore {
   version: 1;
@@ -55,29 +55,31 @@ function saveConversations(store: ConversationStore): void {
   localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(store));
 }
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = "light" | "dark" | "system";
 
 interface Settings {
   theme: ThemeMode;
   apiUrl: string;
-  fontSize: 'small' | 'default' | 'large';
+  fontSize: "small" | "default" | "large";
   defaultModel: string;
   defaultAgent: string;
   temperature: number;
   maxTokens: number;
   speechEnabled: boolean;
+  ttsEnabled: boolean;
 }
 
 function loadSettings(): Settings {
   const defaults: Settings = {
-    theme: 'system',
-    apiUrl: '',
-    fontSize: 'default',
-    defaultModel: '',
-    defaultAgent: '',
+    theme: "system",
+    apiUrl: "",
+    fontSize: "default",
+    defaultModel: "",
+    defaultAgent: "",
     temperature: 0.7,
     maxTokens: 4096,
     speechEnabled: false,
+    ttsEnabled: false,
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -96,10 +98,10 @@ function saveSettings(settings: Settings): void {
 
 const INITIAL_STREAM: StreamState = {
   isStreaming: false,
-  phase: '',
+  phase: "",
   elapsedMs: 0,
   activeToolCalls: [],
-  content: '',
+  content: "",
 };
 
 interface AppState {
@@ -219,7 +221,7 @@ export const useAppStore = create<AppState>((set, get) => {
 
     models: [],
     modelsLoading: true,
-    selectedModel: '',
+    selectedModel: "",
     serverInfo: null,
     savings: null,
 
@@ -229,11 +231,11 @@ export const useAppStore = create<AppState>((set, get) => {
     sidebarOpen: true,
     systemPanelOpen: true,
 
-    optInEnabled: localStorage.getItem(OPTIN_KEY) === 'true',
-    optInDisplayName: localStorage.getItem(OPTIN_NAME_KEY) || '',
-    optInEmail: localStorage.getItem(OPTIN_EMAIL_KEY) || '',
+    optInEnabled: localStorage.getItem(OPTIN_KEY) === "true",
+    optInDisplayName: localStorage.getItem(OPTIN_NAME_KEY) || "",
+    optInEmail: localStorage.getItem(OPTIN_EMAIL_KEY) || "",
     optInAnonId: localStorage.getItem(OPTIN_ANONID_KEY) || crypto.randomUUID(),
-    optInModalSeen: localStorage.getItem(OPTIN_SEEN_KEY) === 'true',
+    optInModalSeen: localStorage.getItem(OPTIN_SEEN_KEY) === "true",
     optInModalOpen: false,
 
     // ── Conversations ───────────────────────────────────────────────
@@ -282,10 +284,10 @@ export const useAppStore = create<AppState>((set, get) => {
       const store = loadConversations();
       const conv: Conversation = {
         id: generateId(),
-        title: 'New chat',
+        title: "New chat",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        model: model || get().selectedModel || 'default',
+        model: model || get().selectedModel || "default",
         messages: [],
       };
       store.conversations[conv.id] = conv;
@@ -349,10 +351,10 @@ export const useAppStore = create<AppState>((set, get) => {
       if (!conv) return;
       conv.messages.push(message);
       conv.updatedAt = Date.now();
-      if (message.role === 'user' && conv.title === 'New chat') {
+      if (message.role === "user" && conv.title === "New chat") {
         conv.title =
           message.content.slice(0, 50) +
-          (message.content.length > 50 ? '...' : '');
+          (message.content.length > 50 ? "..." : "");
       }
       saveConversations(store);
       set({
@@ -375,7 +377,7 @@ export const useAppStore = create<AppState>((set, get) => {
       const conv = store.conversations[conversationId];
       if (!conv) return;
       const lastMsg = conv.messages[conv.messages.length - 1];
-      if (lastMsg && lastMsg.role === 'assistant') {
+      if (lastMsg && lastMsg.role === "assistant") {
         lastMsg.content = content;
         if (toolCalls) lastMsg.toolCalls = toolCalls;
         if (usage) lastMsg.usage = usage;
@@ -416,7 +418,8 @@ export const useAppStore = create<AppState>((set, get) => {
     setCommandPaletteOpen: (open: boolean) => set({ commandPaletteOpen: open }),
     toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
     setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
-    toggleSystemPanel: () => set((s) => ({ systemPanelOpen: !s.systemPanelOpen })),
+    toggleSystemPanel: () =>
+      set((s) => ({ systemPanelOpen: !s.systemPanelOpen })),
     setSystemPanelOpen: (open: boolean) => set({ systemPanelOpen: open }),
 
     // ── Agents ─────────────────────────────────────────────────────
@@ -426,20 +429,23 @@ export const useAppStore = create<AppState>((set, get) => {
     selectedAgentId: null,
 
     setManagedAgents: (agents) => set({ managedAgents: agents }),
-    setManagedAgentsLoading: (loading) => set({ managedAgentsLoading: loading }),
+    setManagedAgentsLoading: (loading) =>
+      set({ managedAgentsLoading: loading }),
     setSelectedAgentId: (id) => set({ selectedAgentId: id }),
 
     agentEvents: [],
-    addAgentEvent: (event) => set((s) => ({
-      agentEvents: [...s.agentEvents.slice(-99), event],
-    })),
+    addAgentEvent: (event) =>
+      set((s) => ({
+        agentEvents: [...s.agentEvents.slice(-99), event],
+      })),
     clearAgentEvents: () => set({ agentEvents: [] }),
 
     // ── Logs ────────────────────────────────────────────────────────
     logEntries: [],
-    addLogEntry: (entry) => set((s) => ({
-      logEntries: [...s.logEntries.slice(-499), entry],
-    })),
+    addLogEntry: (entry) =>
+      set((s) => ({
+        logEntries: [...s.logEntries.slice(-499), entry],
+      })),
     clearLogs: () => set({ logEntries: [] }),
 
     // ── Model loading ───────────────────────────────────────────────
@@ -454,11 +460,15 @@ export const useAppStore = create<AppState>((set, get) => {
       localStorage.setItem(OPTIN_NAME_KEY, displayName);
       localStorage.setItem(OPTIN_EMAIL_KEY, email);
       localStorage.setItem(OPTIN_ANONID_KEY, anonId);
-      set({ optInEnabled: enabled, optInDisplayName: displayName, optInEmail: email });
+      set({
+        optInEnabled: enabled,
+        optInDisplayName: displayName,
+        optInEmail: email,
+      });
     },
     setOptInModalOpen: (open: boolean) => set({ optInModalOpen: open }),
     markOptInModalSeen: () => {
-      localStorage.setItem(OPTIN_SEEN_KEY, 'true');
+      localStorage.setItem(OPTIN_SEEN_KEY, "true");
       set({ optInModalSeen: true });
     },
   };
