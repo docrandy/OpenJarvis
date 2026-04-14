@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from typing import Any
@@ -76,7 +77,8 @@ async def chat_completions(request_body: ChatCompletionRequest, request: Request
                     min_score=config.memory.context_min_score,
                     max_context_tokens=config.memory.context_max_tokens,
                 )
-                enriched = inject_context(
+                enriched = await asyncio.to_thread(
+                    inject_context,
                     query_text,
                     messages,
                     memory_backend,
@@ -117,7 +119,7 @@ async def chat_completions(request_body: ChatCompletionRequest, request: Request
                 score_complexity,
             )
 
-            cr = score_complexity(query_text_for_complexity)
+            cr = await asyncio.to_thread(score_complexity, query_text_for_complexity)
             suggested = adjust_tokens_for_model(
                 cr.suggested_max_tokens,
                 model,

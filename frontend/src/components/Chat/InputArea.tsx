@@ -297,28 +297,30 @@ export function InputArea() {
           complexity_tier: complexity?.tier,
           suggested_max_tokens: complexity?.suggested_max_tokens,
         };
-        // Check if the response has digest audio available
-        let audioMeta: { url: string } | undefined;
-        try {
-          const digestRes = await fetch(`${getBase()}/api/digest`);
-          if (digestRes.ok) {
-            const digest = await digestRes.json();
-            if (digest.audio_available) {
-              audioMeta = { url: `${getBase()}/api/digest/audio` };
-            }
-          }
-        } catch {
-          // Not a digest response or server unavailable — skip
-        }
-
         updateLastAssistant(
           convId,
           accumulatedContent,
           toolCalls.length > 0 ? toolCalls : undefined,
           usage,
           telemetry,
-          audioMeta,
         );
+
+        // Check for digest audio in the background — don't block response/TTS
+        fetch(`${getBase()}/api/digest`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((digest) => {
+            if (digest?.audio_available) {
+              updateLastAssistant(
+                convId,
+                accumulatedContent,
+                toolCalls.length > 0 ? toolCalls : undefined,
+                usage,
+                telemetry,
+                { url: `${getBase()}/api/digest/audio` },
+              );
+            }
+          })
+          .catch(() => {});
 
         // Auto-play TTS for assistant responses when enabled
         if (ttsEnabled && ttsAvailable() && accumulatedContent.trim()) {
@@ -396,8 +398,14 @@ export function InputArea() {
             setInput((prev) => (prev ? prev + " " + text : text));
           }
         }
-      } catch {
-        // Error is captured in useSpeech
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Transcription failed";
+        useAppStore.getState().addLogEntry({
+          timestamp: Date.now(),
+          level: "error",
+          category: "speech",
+          message: `Speech error: ${msg}`,
+        });
       }
     } else {
       await startRecording();

@@ -682,7 +682,15 @@ async def transcribe_speech(request: Request):
     filename = getattr(audio_file, "filename", "audio.wav")
     ext = filename.rsplit(".", 1)[-1] if "." in filename else "wav"
 
-    result = backend.transcribe(audio_bytes, format=ext, language=language or None)
+    try:
+        result = backend.transcribe(audio_bytes, format=ext, language=language or None)
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Transcription failed: {exc}",
+        )
     return {
         "text": result.text,
         "language": result.language,

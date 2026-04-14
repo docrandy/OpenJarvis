@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 from typing import List, Optional
 
@@ -39,10 +40,22 @@ class FasterWhisperBackend(SpeechBackend):
                     "faster-whisper is not installed. "
                     "Install with: uv sync --extra speech"
                 )
+            device = self._device
+            compute_type = self._compute_type
+
+            # float16 is only supported on CUDA — fall back to int8 on CPU
+            if device in ("auto", "cpu") and compute_type == "float16":
+                try:
+                    import ctranslate2  # noqa: F401
+                    if not ctranslate2.get_cuda_device_count():
+                        compute_type = "int8"
+                except Exception:
+                    compute_type = "int8"
+
             self._model = WhisperModel(
                 self._model_size,
-                device=self._device,
-                compute_type=self._compute_type,
+                device=device,
+                compute_type=compute_type,
             )
         return self._model
 
@@ -56,11 +69,15 @@ class FasterWhisperBackend(SpeechBackend):
         """Transcribe audio bytes using Faster-Whisper."""
         model = self._ensure_model()
 
-        # Write audio to a temp file (faster-whisper needs a file path)
+        # Write audio to a temp file (faster-whisper needs a file path).
+        # Use delete=False because on Windows NamedTemporaryFile keeps an
+        # exclusive lock that prevents faster-whisper from reading the file.
         suffix = f".{format}" if not format.startswith(".") else format
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+        tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+        try:
             tmp.write(audio)
             tmp.flush()
+            tmp.close()
 
             kwargs = {}
             if language:
@@ -68,6 +85,11 @@ class FasterWhisperBackend(SpeechBackend):
 
             segments_iter, info = model.transcribe(tmp.name, **kwargs)
             segments_list = list(segments_iter)
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
 
         # Build result
         text = "".join(seg.text for seg in segments_list).strip()
