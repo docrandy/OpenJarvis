@@ -103,3 +103,6 @@ MagicMock/
 
 # Second Repos
 Inline/
+# TypeScript build cache
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
